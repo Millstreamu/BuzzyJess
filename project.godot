@@ -9,7 +9,8 @@ config/name="BuzzyJess"
 run/main_scene="res://scenes/HiveView.tscn"
 
 [input]
-ui_right={"deadzone":0.5,"events":[{"type":"InputEventKey","keycode":16777233}]}
-ui_left={"deadzone":0.5,"events":[{"type":"InputEventKey","keycode":16777231}]}
-ui_down={"deadzone":0.5,"events":[{"type":"InputEventKey","keycode":16777234}]}
-ui_up={"deadzone":0.5,"events":[{"type":"InputEventKey","keycode":16777232}]}
+ui_right={"deadzone":0.5,"events":[{"type":"InputEventKey","physical_keycode":4194321}]}
+ui_left={"deadzone":0.5,"events":[{"type":"InputEventKey","physical_keycode":4194319}]}
+ui_down={"deadzone":0.5,"events":[{"type":"InputEventKey","physical_keycode":4194322}]}
+ui_up={"deadzone":0.5,"events":[{"type":"InputEventKey","physical_keycode":4194320}]}
+
