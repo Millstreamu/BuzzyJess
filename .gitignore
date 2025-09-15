@@ -1,0 +1,9 @@
+# Ignore macOS metadata
+.DS_Store
+assets/.DS_Store
+assets/sprites/.DS_Store
+
+# Ignore Godot editor and import caches
+.godot/
+.import/
+*.import

@@ -13,3 +13,4 @@ ui_right={"deadzone":0.5,"events":[{"type":"InputEventKey","physical_keycode":41
 ui_left={"deadzone":0.5,"events":[{"type":"InputEventKey","physical_keycode":4194319}]}
 ui_down={"deadzone":0.5,"events":[{"type":"InputEventKey","physical_keycode":4194322}]}
 ui_up={"deadzone":0.5,"events":[{"type":"InputEventKey","physical_keycode":4194320}]}
+
