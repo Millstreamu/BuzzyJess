@@ -1,0 +1,15 @@
+; Engine configuration file.
+; It's best edited using the editor UI.
+; If you edit it manually, please keep the structure.
+
+config_version=5
+
+[application]
+config/name="BuzzyJess"
+run/main_scene="res://scenes/HiveView.tscn"
+
+[input]
+ui_right={"deadzone":0.5,"events":[{"type":"InputEventKey","physical_keycode":4194321}]}
+ui_left={"deadzone":0.5,"events":[{"type":"InputEventKey","physical_keycode":4194319}]}
+ui_down={"deadzone":0.5,"events":[{"type":"InputEventKey","physical_keycode":4194322}]}
+ui_up={"deadzone":0.5,"events":[{"type":"InputEventKey","physical_keycode":4194320}]}
