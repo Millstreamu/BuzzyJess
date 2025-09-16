@@ -1,0 +1,16 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource path="res://scripts/ui/BuildRadialMenu.gd" type="Script" id=1]
+
+[node name="BuildRadialMenu" type="Control"]
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+script = ExtResource(1)
+
+[node name="Ring" type="Control" parent="BuildRadialMenu"]
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
