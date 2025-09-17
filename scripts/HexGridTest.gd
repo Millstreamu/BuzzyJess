@@ -69,7 +69,7 @@ func _unhandled_input(event: InputEvent) -> void:
 
 func _try_move_selection(delta: Vector2i) -> void:
     var next_coord := _selection + delta
-    if next_coord in _hex_coords:
+    if _positions.has(next_coord):
         _selection = next_coord
         queue_redraw()
 
