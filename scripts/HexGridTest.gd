@@ -16,11 +16,13 @@ const SQRT_3 := sqrt(3.0)
 func _ready() -> void:
     _generate_grid()
     queue_redraw()
+    var viewport := get_viewport()
+    if viewport:
+        viewport.size_changed.connect(_on_viewport_size_changed)
 
-func _notification(what: int) -> void:
-    if what == NOTIFICATION_RESIZED:
-        _update_offset()
-        queue_redraw()
+func _on_viewport_size_changed() -> void:
+    _update_offset()
+    queue_redraw()
 
 func _generate_grid() -> void:
     _hex_coords.clear()
