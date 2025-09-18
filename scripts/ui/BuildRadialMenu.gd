@@ -74,14 +74,15 @@ class RadialOptionControl extends Control:
         draw_circle(icon_center, icon_radius, color)
         var font: Font = get_theme_default_font()
         if font:
+            var font_size: int = max(1, get_theme_default_font_size())
             var width: float = max(size.x, icon_size.x)
-            var label_size: Vector2 = font.get_string_size(label_text)
+            var label_size: Vector2 = font.get_string_size(label_text, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size)
             var label_pos: Vector2 = Vector2((width - label_size.x) * 0.5, icon_size.y + 16)
-            draw_string(font, label_pos, label_text)
+            draw_string(font, label_pos, label_text, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size)
             var cost_color: Color = Color(0.4, 0.9, 0.4) if affordable else Color(0.9, 0.3, 0.3)
-            var cost_size: Vector2 = font.get_string_size(cost_text)
+            var cost_size: Vector2 = font.get_string_size(cost_text, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size)
             var cost_pos: Vector2 = Vector2((width - cost_size.x) * 0.5, icon_size.y + 32)
-            draw_string(font, cost_pos, cost_text, HORIZONTAL_ALIGNMENT_LEFT, -1, -1, cost_color)
+            draw_string(font, cost_pos, cost_text, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size, cost_color)
 
 func _ready() -> void:
     visible = false
