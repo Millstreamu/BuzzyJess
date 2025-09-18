@@ -1,5 +1,4 @@
 extends Node
-class_name IconDB
 
 const RESOURCE_COLORS := {
     "Honey": Color(0.98, 0.78, 0.24),
@@ -34,7 +33,7 @@ func _make_circle_icon(color: Color) -> Texture2D:
     return ImageTexture.create_from_image(image)
 
 func _color_from_string(value: String) -> Color:
-    var hash := abs(value.hash())
+    var hash: int = abs(value.hash())
     var r := float((hash >> 16) & 0xFF) / 255.0
     var g := float((hash >> 8) & 0xFF) / 255.0
     var b := float(hash & 0xFF) / 255.0
