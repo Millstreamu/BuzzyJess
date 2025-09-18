@@ -31,6 +31,7 @@ var _cell_type_colors := {
 @onready var _build_controller: BuildController = $BuildController
 @onready var _assign_controller: AssignController = $AssignController
 @onready var _build_menu: BuildRadialMenu = $CanvasLayer/BuildRadialMenu
+@onready var _resources_panel: ResourcesPanel = $CanvasLayer/ResourcesPanel
 
 func _ready() -> void:
     _generate_grid()
@@ -93,7 +94,13 @@ func _update_offset() -> void:
     _grid_offset = get_viewport_rect().size * 0.5 - grid_center
 
 func _unhandled_input(event: InputEvent) -> void:
-    if (_build_menu and _build_menu.is_open()) or (_assign_controller and _assign_controller.is_panel_open()):
+    if event.is_action_pressed("resources_panel_toggle"):
+        if _resources_panel:
+            _resources_panel.toggle()
+        accept_event()
+        return
+
+    if (_build_menu and _build_menu.is_open()) or (_assign_controller and _assign_controller.is_panel_open()) or (_resources_panel and _resources_panel.is_open()):
         return
 
     if event.is_action_pressed("ui_right"):

@@ -1,23 +1,21 @@
 extends Node
 
-var resources: Dictionary = {
-    "Comb": 40,
-    "Honey": 30,
-    "Pollen": 30,
-    "NectarCommon": 25,
-    "PetalRed": 10
-}
+var resources: Dictionary = {}
 
 var bees: Array[Dictionary] = []
 var _bee_lookup: Dictionary = {}
 
 func _ready() -> void:
+    _initialize_resources()
     _generate_default_bees()
 
 func can_afford(cost: Dictionary) -> bool:
     for key in cost.keys():
         var amount: float = cost[key]
-        if resources.get(key, 0) < amount:
+        var id := String(key)
+        var entry: Dictionary = resources.get(id, {})
+        var qty: float = float(entry.get("qty", 0))
+        if qty < amount:
             return false
     return true
 
@@ -25,11 +23,26 @@ func spend(cost: Dictionary) -> bool:
     if not can_afford(cost):
         return false
     for key in cost.keys():
-        resources[key] = resources.get(key, 0) - cost[key]
+        var id := StringName(String(key))
+        var entry: Dictionary = _get_resource_entry(id)
+        var qty: float = float(entry.get("qty", 0))
+        var amount: float = float(cost[key])
+        entry["qty"] = max(0, int(round(qty - amount)))
+        resources[String(id)] = entry
+    _emit_resources_changed()
     return true
 
 func get_resources_snapshot() -> Dictionary:
-    return resources.duplicate(true)
+    var snap: Dictionary = {}
+    for key in resources.keys():
+        var id := StringName(key)
+        var entry: Dictionary = resources[key]
+        snap[id] = {
+            "qty": int(entry.get("qty", 0)),
+            "cap": int(entry.get("cap", 0)),
+            "display_name": entry.get("display_name", String(key))
+        }
+    return snap
 
 func get_available_bees() -> Array:
     var available: Array = []
@@ -58,6 +71,68 @@ func unassign_bee(bee_id: int) -> void:
         return
     var bee: Dictionary = _bee_lookup[bee_id]
     bee["assigned_group"] = -1
+
+func _initialize_resources() -> void:
+    resources.clear()
+    var ids: Array[StringName] = ConfigDB.get_resource_ids()
+    for id in ids:
+        var entry: Dictionary = _default_resource_entry(id)
+        entry["qty"] = ConfigDB.get_resource_initial(id)
+        resources[String(id)] = entry
+    _emit_resources_changed()
+
+func set_resource_quantity(resource_id: StringName, amount: int) -> void:
+    var entry: Dictionary = _get_resource_entry(resource_id)
+    var cap: int = int(entry.get("cap", 0))
+    if cap > 0:
+        entry["qty"] = clamp(amount, 0, cap)
+    else:
+        entry["qty"] = max(amount, 0)
+    resources[String(resource_id)] = entry
+    _emit_resources_changed()
+
+func adjust_resource_quantity(resource_id: StringName, delta: int) -> void:
+    var entry: Dictionary = _get_resource_entry(resource_id)
+    var cap: int = int(entry.get("cap", 0))
+    var qty: int = int(entry.get("qty", 0)) + delta
+    if cap > 0:
+        qty = clamp(qty, 0, cap)
+    else:
+        qty = max(qty, 0)
+    entry["qty"] = qty
+    resources[String(resource_id)] = entry
+    _emit_resources_changed()
+
+func set_resource_capacity(resource_id: StringName, capacity: int) -> void:
+    var entry: Dictionary = _get_resource_entry(resource_id)
+    entry["cap"] = max(capacity, 0)
+    if entry.get("qty", 0) > entry.get("cap", 0) and entry.get("cap", 0) > 0:
+        entry["qty"] = int(entry.get("cap", 0))
+    resources[String(resource_id)] = entry
+    _emit_resources_changed()
+
+func _emit_resources_changed() -> void:
+    Events.resources_changed.emit(get_resources_snapshot())
+
+func _get_resource_entry(resource_id: StringName) -> Dictionary:
+    var key := String(resource_id)
+    var entry: Dictionary = resources.get(key, {}).duplicate(true)
+    if entry.is_empty():
+        entry = _default_resource_entry(resource_id)
+    if not entry.has("display_name"):
+        entry["display_name"] = ConfigDB.get_resource_display_name(resource_id)
+    if int(entry.get("cap", 0)) == 0:
+        var cap := ConfigDB.get_resource_cap(resource_id)
+        if cap > 0:
+            entry["cap"] = cap
+    return entry
+
+func _default_resource_entry(resource_id: StringName) -> Dictionary:
+    return {
+        "qty": 0,
+        "cap": ConfigDB.get_resource_cap(resource_id),
+        "display_name": ConfigDB.get_resource_display_name(resource_id)
+    }
 
 func _generate_default_bees() -> void:
     bees.clear()
