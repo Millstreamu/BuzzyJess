@@ -119,4 +119,3 @@ static func _clear_assignments(entry: Dictionary) -> void:
             if bee_id != -1:
                 GameState.unassign_bee(bee_id)
     entry["assigned"] = []
-*** End Patch

@@ -193,4 +193,3 @@ func _on_animation_finished(anim_name: StringName) -> void:
         panel_closed.emit()
     elif anim_name == StringName("slide_in"):
         position.x = 0
-*** End Patch
