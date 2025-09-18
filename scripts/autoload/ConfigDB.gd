@@ -1,0 +1,60 @@
+extends Node
+class_name ConfigDB
+
+const BUILD_ORDER: Array[StringName] = [
+    StringName("Brood"),
+    StringName("Storage"),
+    StringName("HoneyVat"),
+    StringName("WaxWorkshop"),
+    StringName("CandleHall"),
+    StringName("GuardPost"),
+    StringName("HerbalistDen")
+]
+
+var _cell_defs: Dictionary = {}
+var _buildable_ids: Array[StringName] = []
+
+func _ready() -> void:
+    load_cells()
+
+func load_cells() -> void:
+    _cell_defs.clear()
+    _buildable_ids.clear()
+    var path := "res://data/configs/cells.json"
+    if not FileAccess.file_exists(path):
+        push_warning("cells.json not found at %s" % path)
+        return
+    var file := FileAccess.open(path, FileAccess.READ)
+    if file == null:
+        push_warning("Failed to open %s" % path)
+        return
+    var text := file.get_as_text()
+    file.close()
+    var parsed := JSON.parse_string(text)
+    if typeof(parsed) != TYPE_DICTIONARY:
+        push_warning("Invalid cells.json contents")
+        return
+    _cell_defs = parsed
+    for id in BUILD_ORDER:
+        if _cell_defs.has(String(id)):
+            _buildable_ids.append(id)
+    for key in _cell_defs.keys():
+        if key == "Empty":
+            continue
+        var id := StringName(key)
+        if _buildable_ids.has(id):
+            continue
+        _buildable_ids.append(id)
+
+func get_buildable_cell_types() -> Array[StringName]:
+    return _buildable_ids.duplicate()
+
+func get_cell_cost(cell_type: StringName) -> Dictionary:
+    var def := _cell_defs.get(String(cell_type), {})
+    var cost := def.get("cost", {})
+    if typeof(cost) == TYPE_DICTIONARY:
+        return cost.duplicate(true)
+    return {}
+
+func has_cell_type(cell_type: StringName) -> bool:
+    return _cell_defs.has(String(cell_type))

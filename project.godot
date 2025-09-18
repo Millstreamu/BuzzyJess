@@ -8,6 +8,11 @@ config_version=5
 config/name="BuzzyJess"
 run/main_scene="res://scenes/TestHex.tscn"
 
+[autoload]
+ConfigDB="*res://scripts/autoload/ConfigDB.gd"
+GameState="*res://scripts/autoload/GameState.gd"
+Events="*res://scripts/autoload/Events.gd"
+
 [input]
 ui_right={"deadzone":0.5,"events":[{"type":"InputEventKey","physical_keycode":4194321}]}
 ui_left={"deadzone":0.5,"events":[{"type":"InputEventKey","physical_keycode":4194319}]}
