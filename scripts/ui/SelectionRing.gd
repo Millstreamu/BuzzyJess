@@ -30,5 +30,5 @@ func stop_pulse() -> void:
     queue_redraw()
 
 func _draw() -> void:
-    var radius := min(size.x, size.y) * 0.5 - ring_width * 0.5
+    var radius: float = min(size.x, size.y) * 0.5 - ring_width * 0.5
     draw_arc(pivot_offset, radius, 0.0, TAU, 96, ring_color, ring_width)
