@@ -4,6 +4,9 @@ class_name AssignBeePanel
 signal assign_confirmed(cell_id: int, group_id: int, bee_id: int)
 signal panel_closed()
 
+const SLIDE_IN_ANIMATION := StringName("slide_in")
+const SLIDE_OUT_ANIMATION := StringName("slide_out")
+
 var _cell_id: int = -1
 var _group_id: int = -1
 var _building_type: StringName = &""
@@ -36,13 +39,15 @@ func open(cell_id: int, group_id: int, building_type: StringName, rows: Array, c
     title_label.text = "Assign Bee – %s" % String(building_type)
     _rebuild_list()
     visible = true
-    anim.play("slide_in")
+    if not _play_animation(SLIDE_IN_ANIMATION):
+        position.x = 0
 
 func close() -> void:
     if _closing:
         return
     _closing = true
-    anim.play("slide_out")
+    if not _play_animation(SLIDE_OUT_ANIMATION):
+        _finalize_close()
 
 func is_open() -> bool:
     return _is_open
@@ -186,10 +191,21 @@ func _confirm() -> void:
     close()
 
 func _on_animation_finished(anim_name: StringName) -> void:
-    if anim_name == StringName("slide_out"):
-        visible = false
-        _is_open = false
-        _closing = false
-        panel_closed.emit()
-    elif anim_name == StringName("slide_in"):
+    if anim_name == SLIDE_OUT_ANIMATION:
+        _finalize_close()
+    elif anim_name == SLIDE_IN_ANIMATION:
         position.x = 0
+
+func _play_animation(name: StringName) -> bool:
+    if anim and anim.has_animation(name):
+        anim.play(name)
+        return true
+    return false
+
+func _finalize_close() -> void:
+    var was_open := _is_open
+    visible = false
+    _is_open = false
+    _closing = false
+    if was_open:
+        panel_closed.emit()
