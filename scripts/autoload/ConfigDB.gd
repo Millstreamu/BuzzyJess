@@ -10,6 +10,15 @@ const BUILD_ORDER: Array[StringName] = [
     StringName("HerbalistDen")
 ]
 
+const BUILDING_ASSIGNMENT_DEFAULTS := {
+    "Storage": {"capacity": 1, "efficiency": 1},
+    "HoneyVat": {"capacity": 2, "efficiency": 2},
+    "WaxWorkshop": {"capacity": 1, "efficiency": 1},
+    "CandleHall": {"capacity": 2, "efficiency": 3},
+    "GuardPost": {"capacity": 1, "efficiency": 1},
+    "HerbalistDen": {"capacity": 1, "efficiency": 2}
+}
+
 var _cell_defs: Dictionary = {}
 var _buildable_ids: Array[StringName] = []
 
@@ -57,3 +66,11 @@ func get_cell_cost(cell_type: StringName) -> Dictionary:
 
 func has_cell_type(cell_type: StringName) -> bool:
     return _cell_defs.has(String(cell_type))
+
+func get_base_assignment_capacity(cell_type: StringName) -> int:
+    var entry: Dictionary = BUILDING_ASSIGNMENT_DEFAULTS.get(String(cell_type), {})
+    return int(entry.get("capacity", 0))
+
+func get_efficiency(building_type: StringName) -> int:
+    var entry: Dictionary = BUILDING_ASSIGNMENT_DEFAULTS.get(String(building_type), {})
+    return int(entry.get("efficiency", 0))
