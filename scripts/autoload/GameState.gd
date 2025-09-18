@@ -1,5 +1,4 @@
 extends Node
-class_name GameState
 
 var resources: Dictionary = {
     "Comb": 40,

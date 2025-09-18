@@ -1,5 +1,4 @@
 extends Node
-class_name Events
 
 signal cell_built(cell_id: int, cell_type: StringName)
 signal resources_changed(snapshot: Dictionary)

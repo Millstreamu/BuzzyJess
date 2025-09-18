@@ -21,9 +21,10 @@ var costs: Array[Dictionary] = []
 var affordable: Array[bool] = []
 var selected_index: int = -1
 
-var _is_open := false
-var _open_tween: Tween
-var _close_tween: Tween
+
+var _is_open: bool = false
+var _open_tween: Tween = null
+var _close_tween: Tween = null
 
 @onready var option_layer: Control = $OptionLayer
 @onready var selection_ring: Control = $OptionLayer/SelectionRing
@@ -31,11 +32,12 @@ var _close_tween: Tween
 class RadialOptionControl extends Control:
     var label_text: String = ""
     var cost_text: String = ""
-    var affordable := true
-    var icon_size: Vector2
+    var affordable: bool = true
+    var icon_size: Vector2 = Vector2.ZERO
     var base_color: Color = Color(0.89, 0.7, 0.21)
     var disabled_alpha: float = 0.5
-    var _flash_tween: Tween
+    var _flash_tween: Tween = null
+
 
     func setup(label: StringName, cost: Dictionary, size: Vector2, is_affordable: bool) -> void:
         label_text = String(label)
@@ -50,7 +52,7 @@ class RadialOptionControl extends Control:
     func _format_cost(cost: Dictionary) -> String:
         if cost.is_empty():
             return "Free"
-        var keys := cost.keys()
+        var keys: Array = cost.keys()
         keys.sort()
         var parts: Array[String] = []
         for key in keys:
@@ -66,21 +68,22 @@ class RadialOptionControl extends Control:
         _flash_tween.tween_property(self, "modulate", Color.WHITE, 0.12)
 
     func _draw() -> void:
-        var icon_center := Vector2(icon_size.x * 0.5, icon_size.y * 0.5)
-        var icon_radius := min(icon_size.x, icon_size.y) * 0.5
-        var color := base_color
+
+        var icon_center: Vector2 = Vector2(icon_size.x * 0.5, icon_size.y * 0.5)
+        var icon_radius: float = min(icon_size.x, icon_size.y) * 0.5
+        var color: Color = base_color
         if not affordable:
             color.a = disabled_alpha
         draw_circle(icon_center, icon_radius, color)
-        var font := get_theme_default_font()
+        var font: Font = get_theme_default_font()
         if font:
-            var width := max(size.x, icon_size.x)
-            var label_size := font.get_string_size(label_text)
-            var label_pos := Vector2((width - label_size.x) * 0.5, icon_size.y + 16)
+            var width: float = max(size.x, icon_size.x)
+            var label_size: Vector2 = font.get_string_size(label_text)
+            var label_pos: Vector2 = Vector2((width - label_size.x) * 0.5, icon_size.y + 16)
             draw_string(font, label_pos, label_text)
-            var cost_color := affordable ? Color(0.4, 0.9, 0.4) : Color(0.9, 0.3, 0.3)
-            var cost_size := font.get_string_size(cost_text)
-            var cost_pos := Vector2((width - cost_size.x) * 0.5, icon_size.y + 32)
+            var cost_color: Color = Color(0.4, 0.9, 0.4) if affordable else Color(0.9, 0.3, 0.3)
+            var cost_size: Vector2 = font.get_string_size(cost_text)
+            var cost_pos: Vector2 = Vector2((width - cost_size.x) * 0.5, icon_size.y + 32)
             draw_string(font, cost_pos, cost_text, HORIZONTAL_ALIGNMENT_LEFT, -1, -1, cost_color)
 
 func _ready() -> void:
@@ -127,19 +130,19 @@ func _prepare_options() -> void:
         if child == selection_ring:
             continue
         child.queue_free()
-    var buildable := ConfigDB.get_buildable_cell_types()
+    var buildable: Array[StringName] = ConfigDB.get_buildable_cell_types()
     for cell_type in buildable:
         options.append(cell_type)
-    var count := options.size()
+    var count: int = options.size()
     if count == 0:
         selected_index = -1
         _show_empty_placeholder()
         return
-    var start_angle := -PI * 0.5
+    var start_angle: float = -PI * 0.5
     for i in count:
-        var angle := start_angle + float(i) * TAU / float(count)
+        var angle: float = start_angle + float(i) * TAU / float(count)
         angles.append(angle)
-        var cost := ConfigDB.get_cell_cost(options[i])
+        var cost: Dictionary = ConfigDB.get_cell_cost(options[i])
         costs.append(cost)
         affordable.append(GameState.can_afford(cost))
     selected_index = clamp(selected_index, 0, count - 1)
@@ -148,7 +151,7 @@ func _prepare_options() -> void:
 
 func _show_empty_placeholder() -> void:
     selection_ring.visible = false
-    var label := Label.new()
+    var label: Label = Label.new()
     label.text = "No build options"
     label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
     label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
@@ -161,11 +164,11 @@ func _layout_buttons() -> void:
         return
     buttons.clear()
     for i in options.size():
-        var btn := RadialOptionControl.new()
-        var cost := costs[i]
-        var can_build := affordable[i]
+        var btn: RadialOptionControl = RadialOptionControl.new()
+        var cost: Dictionary = costs[i]
+        var can_build: bool = affordable[i]
         btn.setup(options[i], cost, button_size, can_build)
-        var offset := Vector2(radius, 0).rotated(angles[i]) - button_size * 0.5
+        var offset: Vector2 = Vector2(radius, 0).rotated(angles[i]) - button_size * 0.5
         btn.position = offset
         option_layer.add_child(btn)
         buttons.append(btn)
@@ -197,11 +200,11 @@ func _unhandled_input(event: InputEvent) -> void:
 func _select_dir(dir: Vector2) -> void:
     if options.is_empty():
         return
-    var best_dot := -INF
-    var idx := selected_index
+    var best_dot: float = -INF
+    var idx: int = selected_index
     for i in options.size():
-        var v := Vector2.RIGHT.rotated(angles[i])
-        var d := v.normalized().dot(dir)
+        var v: Vector2 = Vector2.RIGHT.rotated(angles[i])
+        var d: float = v.normalized().dot(dir)
         if d > best_dot:
             best_dot = d
             idx = i
@@ -213,7 +216,7 @@ func _update_ring() -> void:
     if options.is_empty() or selected_index < 0 or selected_index >= angles.size():
         selection_ring.visible = false
         return
-    var local_center := Vector2(radius, 0).rotated(angles[selected_index])
+    var local_center: Vector2 = Vector2(radius, 0).rotated(angles[selected_index])
     selection_ring.visible = true
     selection_ring.scale = Vector2.ONE
     selection_ring.global_position = option_layer.global_position + local_center - selection_ring.pivot_offset
@@ -229,8 +232,8 @@ func _confirm() -> void:
         Events.build_failed.emit(cell_id)
         close()
         return
-    var cell_type := options[selected_index]
-    var cost := costs[selected_index]
+    var cell_type: StringName = options[selected_index]
+    var cost: Dictionary = costs[selected_index]
     if not GameState.can_afford(cost) or not GameState.spend(cost):
         _show_unaffordable_feedback(selected_index)
         return
@@ -244,7 +247,7 @@ func _confirm() -> void:
 func _show_unaffordable_feedback(idx: int) -> void:
     if idx >= 0 and idx < buttons.size():
         buttons[idx].flash_unaffordable()
-    var tween := create_tween()
+    var tween: Tween = create_tween()
     tween.tween_property(selection_ring, "scale", selection_ring.scale * 1.15, 0.08).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
     tween.tween_property(selection_ring, "scale", Vector2.ONE, 0.12).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_IN)
 
@@ -275,16 +278,16 @@ func _on_close_finished() -> void:
     menu_closed.emit()
 
 func _to_canvas_position(world_pos: Vector2) -> Vector2:
-    var viewport := get_viewport()
+    var viewport: Viewport = get_viewport()
     if viewport:
-        var camera := viewport.get_camera_2d()
+        var camera: Camera2D = viewport.get_camera_2d()
         if camera:
             return camera.unproject_position(world_pos)
     return world_pos
 
 func _clamp_center() -> void:
-    var rect := get_viewport_rect()
-    var margin_x := max(padding.x, radius + button_size.x)
-    var margin_y := max(padding.y, radius + button_size.y + 48.0)
+    var rect: Rect2i = get_viewport_rect()
+    var margin_x: float = max(padding.x, radius + button_size.x)
+    var margin_y: float = max(padding.y, radius + button_size.y + 48.0)
     center.x = clamp(center.x, margin_x, rect.size.x - margin_x)
     center.y = clamp(center.y, margin_y, rect.size.y - margin_y)
