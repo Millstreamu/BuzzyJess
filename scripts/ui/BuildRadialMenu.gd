@@ -21,7 +21,6 @@ var costs: Array[Dictionary] = []
 var affordable: Array[bool] = []
 var selected_index: int = -1
 
-
 var _is_open: bool = false
 var _open_tween: Tween = null
 var _close_tween: Tween = null
@@ -37,7 +36,6 @@ class RadialOptionControl extends Control:
     var base_color: Color = Color(0.89, 0.7, 0.21)
     var disabled_alpha: float = 0.5
     var _flash_tween: Tween = null
-
 
     func setup(label: StringName, cost: Dictionary, size: Vector2, is_affordable: bool) -> void:
         label_text = String(label)
@@ -68,7 +66,6 @@ class RadialOptionControl extends Control:
         _flash_tween.tween_property(self, "modulate", Color.WHITE, 0.12)
 
     func _draw() -> void:
-
         var icon_center: Vector2 = Vector2(icon_size.x * 0.5, icon_size.y * 0.5)
         var icon_radius: float = min(icon_size.x, icon_size.y) * 0.5
         var color: Color = base_color
@@ -126,12 +123,12 @@ func _prepare_options() -> void:
     buttons.clear()
     costs.clear()
     affordable.clear()
-    for child in option_layer.get_children():
+    for child: Node in option_layer.get_children():
         if child == selection_ring:
             continue
         child.queue_free()
     var buildable: Array[StringName] = ConfigDB.get_buildable_cell_types()
-    for cell_type in buildable:
+    for cell_type: StringName in buildable:
         options.append(cell_type)
     var count: int = options.size()
     if count == 0:
@@ -139,7 +136,7 @@ func _prepare_options() -> void:
         _show_empty_placeholder()
         return
     var start_angle: float = -PI * 0.5
-    for i in count:
+    for i: int in count:
         var angle: float = start_angle + float(i) * TAU / float(count)
         angles.append(angle)
         var cost: Dictionary = ConfigDB.get_cell_cost(options[i])
@@ -163,7 +160,7 @@ func _layout_buttons() -> void:
     if options.is_empty():
         return
     buttons.clear()
-    for i in options.size():
+    for i: int in options.size():
         var btn: RadialOptionControl = RadialOptionControl.new()
         var cost: Dictionary = costs[i]
         var can_build: bool = affordable[i]
@@ -202,7 +199,7 @@ func _select_dir(dir: Vector2) -> void:
         return
     var best_dot: float = -INF
     var idx: int = selected_index
-    for i in options.size():
+    for i: int in options.size():
         var v: Vector2 = Vector2.RIGHT.rotated(angles[i])
         var d: float = v.normalized().dot(dir)
         if d > best_dot:
