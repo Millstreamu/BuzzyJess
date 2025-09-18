@@ -59,19 +59,27 @@ func _update_offset() -> void:
 
 func _unhandled_input(event: InputEvent) -> void:
     if event.is_action_pressed("ui_right"):
+        print("Input action: ui_right")
         _try_move_selection(Vector2i(1, 0))
     elif event.is_action_pressed("ui_left"):
+        print("Input action: ui_left")
         _try_move_selection(Vector2i(-1, 0))
     elif event.is_action_pressed("ui_up"):
+        print("Input action: ui_up")
         _try_move_selection(Vector2i(0, -1))
     elif event.is_action_pressed("ui_down"):
+        print("Input action: ui_down")
         _try_move_selection(Vector2i(0, 1))
 
 func _try_move_selection(delta: Vector2i) -> void:
     var next_coord := _selection + delta
-    if next_coord in _hex_coords:
+    print("Trying to move selection from", _selection, "by", delta, "->", next_coord)
+    if _positions.has(next_coord):
         _selection = next_coord
+        print("Selection moved to", _selection)
         queue_redraw()
+    else:
+        print("No hex at", next_coord)
 
 func _draw() -> void:
     for coord in _hex_coords:
