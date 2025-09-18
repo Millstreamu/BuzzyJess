@@ -56,4 +56,3 @@ func _on_assign_confirmed(cell_id: int, group_id: int, bee_id: int) -> void:
 
 func _on_panel_closed() -> void:
     _current_cell = -1
-*** End Patch
