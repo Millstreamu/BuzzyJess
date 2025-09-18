@@ -21,9 +21,12 @@ const BUILDING_ASSIGNMENT_DEFAULTS := {
 
 var _cell_defs: Dictionary = {}
 var _buildable_ids: Array[StringName] = []
+var _resource_defs: Array[Dictionary] = []
+var _resource_lookup: Dictionary = {}
 
 func _ready() -> void:
     load_cells()
+    load_resources()
 
 func load_cells() -> void:
     _cell_defs.clear()
@@ -54,6 +57,43 @@ func load_cells() -> void:
             continue
         _buildable_ids.append(id)
 
+func load_resources() -> void:
+    _resource_defs.clear()
+    _resource_lookup.clear()
+    var path: String = "res://data/configs/resources.json"
+    if not FileAccess.file_exists(path):
+        push_warning("resources.json not found at %s" % path)
+        return
+    var file: FileAccess = FileAccess.open(path, FileAccess.READ)
+    if file == null:
+        push_warning("Failed to open %s" % path)
+        return
+    var text: String = file.get_as_text()
+    file.close()
+    var parsed: Variant = JSON.parse_string(text)
+    if typeof(parsed) != TYPE_DICTIONARY:
+        push_warning("Invalid resources.json contents")
+        return
+    var list: Variant = parsed.get("resources", [])
+    if typeof(list) != TYPE_ARRAY:
+        push_warning("Invalid resources.json: expected 'resources' array")
+        return
+    for entry in list:
+        if typeof(entry) != TYPE_DICTIONARY:
+            continue
+        var id_value: Variant = entry.get("id", "")
+        if typeof(id_value) != TYPE_STRING:
+            continue
+        var id: StringName = StringName(String(id_value))
+        var def := {
+            "id": id,
+            "display_name": String(entry.get("display_name", String(id_value))),
+            "cap": int(entry.get("cap", 0)),
+            "initial": int(entry.get("initial", 0))
+        }
+        _resource_defs.append(def)
+        _resource_lookup[String(id)] = def
+
 func get_buildable_cell_types() -> Array[StringName]:
     return _buildable_ids.duplicate()
 
@@ -74,3 +114,23 @@ func get_base_assignment_capacity(cell_type: StringName) -> int:
 func get_efficiency(building_type: StringName) -> int:
     var entry: Dictionary = BUILDING_ASSIGNMENT_DEFAULTS.get(String(building_type), {})
     return int(entry.get("efficiency", 0))
+
+func get_resource_ids() -> Array[StringName]:
+    var ids: Array[StringName] = []
+    for def in _resource_defs:
+        var id: StringName = def.get("id", StringName(""))
+        if id != StringName(""):
+            ids.append(id)
+    return ids
+
+func get_resource_cap(resource_id: StringName) -> int:
+    var def: Dictionary = _resource_lookup.get(String(resource_id), {})
+    return int(def.get("cap", 0))
+
+func get_resource_initial(resource_id: StringName) -> int:
+    var def: Dictionary = _resource_lookup.get(String(resource_id), {})
+    return int(def.get("initial", 0))
+
+func get_resource_display_name(resource_id: StringName) -> String:
+    var def: Dictionary = _resource_lookup.get(String(resource_id), {})
+    return String(def.get("display_name", String(resource_id)))

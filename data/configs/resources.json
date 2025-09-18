@@ -1,0 +1,9 @@
+{
+  "resources": [
+    {"id": "Honey", "display_name": "Honey", "cap": 50, "initial": 30},
+    {"id": "Comb", "display_name": "Comb", "cap": 80, "initial": 40},
+    {"id": "Pollen", "display_name": "Pollen", "cap": 60, "initial": 30},
+    {"id": "NectarCommon", "display_name": "Common Nectar", "cap": 40, "initial": 25},
+    {"id": "PetalRed", "display_name": "Red Petals", "cap": 25, "initial": 10}
+  ]
+}
