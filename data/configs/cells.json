@@ -1,0 +1,31 @@
+{
+  "Brood": {
+    "cost": {"Comb": 10, "Honey": 1},
+    "reverts_to": "Empty",
+    "mergeable": false
+  },
+  "Storage": {
+    "cost": {"Comb": 8},
+    "mergeable": true
+  },
+  "HoneyVat": {
+    "cost": {"Comb": 6, "NectarCommon": 4},
+    "mergeable": true
+  },
+  "WaxWorkshop": {
+    "cost": {"Pollen": 5, "NectarCommon": 3},
+    "mergeable": true
+  },
+  "CandleHall": {
+    "cost": {"Comb": 4, "Honey": 4, "Pollen": 4},
+    "mergeable": true
+  },
+  "GuardPost": {
+    "cost": {"Comb": 5, "Honey": 3, "PetalRed": 2},
+    "mergeable": true
+  },
+  "HerbalistDen": {
+    "cost": {"Comb": 3, "Honey": 3, "Pollen": 6},
+    "mergeable": true
+  }
+}
