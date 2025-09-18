@@ -29,12 +29,15 @@ var _cell_type_colors := {
 }
 
 @onready var _build_controller: BuildController = $BuildController
+@onready var _assign_controller: AssignController = $AssignController
 @onready var _build_menu: BuildRadialMenu = $CanvasLayer/BuildRadialMenu
 
 func _ready() -> void:
     _generate_grid()
-    if Events.cell_built.is_connected(_on_cell_built) == false:
+    if not Events.cell_built.is_connected(_on_cell_built):
         Events.cell_built.connect(_on_cell_built)
+    if not Events.assignment_changed.is_connected(_on_assignment_changed):
+        Events.assignment_changed.connect(_on_assignment_changed)
     queue_redraw()
     var viewport := get_viewport()
     if viewport:
@@ -90,7 +93,7 @@ func _update_offset() -> void:
     _grid_offset = get_viewport_rect().size * 0.5 - grid_center
 
 func _unhandled_input(event: InputEvent) -> void:
-    if _build_menu and _build_menu.is_open():
+    if (_build_menu and _build_menu.is_open()) or (_assign_controller and _assign_controller.is_panel_open()):
         return
 
     if event.is_action_pressed("ui_right"):
@@ -114,11 +117,29 @@ func _handle_confirm() -> void:
     var cell_id: int = _cell_ids_by_coord.get(_selection, -1)
     if cell_id == -1:
         return
-    if HiveSystem.get_cell_type(cell_id) != "Empty":
+    var cell_type := HiveSystem.get_cell_type(cell_id)
+    if cell_type == "Empty":
+        if _build_controller:
+            var world_position: Vector2 = _get_cell_center(_selection)
+            _build_controller.open_radial(cell_id, world_position)
+    else:
+        if _assign_controller:
+            _assign_controller.open_panel(cell_id)
+
+func _draw_bee_icons(center: Vector2, icons: Array) -> void:
+    if icons.is_empty():
         return
-    if _build_controller:
-        var world_position: Vector2 = _get_cell_center(_selection)
-        _build_controller.open_radial(cell_id, world_position)
+    var icon_size := Vector2(28, 28)
+    var spacing := 32.0
+    var count := icons.size()
+    var start_x := -spacing * (float(count) - 1.0) * 0.5
+    for i in icons.size():
+        var tex: Texture2D = icons[i]
+        if tex == null:
+            continue
+        var offset_x := start_x + spacing * float(i)
+        var pos := center + Vector2(offset_x, -icon_size.y * 0.25) - icon_size * 0.5
+        draw_texture_rect(tex, Rect2(pos, icon_size), false)
 
 func _get_cell_center(coord: Vector2i) -> Vector2:
     return _positions.get(coord, Vector2.ZERO) + _grid_offset
@@ -131,6 +152,9 @@ func _draw() -> void:
         var cell_type := HiveSystem.get_cell_type(cell_id) if cell_id != -1 else "Empty"
         var fill_color: Color = _cell_type_colors.get(cell_type, hex_color)
         draw_colored_polygon(points, fill_color)
+        if cell_id != -1:
+            var icons := HiveSystem.get_cell_bee_icons(cell_id)
+            _draw_bee_icons(center, icons)
         if coord == _selection:
             var outline_points: PackedVector2Array = points.duplicate()
             outline_points.append(outline_points[0])
@@ -152,4 +176,7 @@ func _hex_points(center: Vector2) -> PackedVector2Array:
     return points
 
 func _on_cell_built(cell_id: int, cell_type: StringName) -> void:
+    queue_redraw()
+
+func _on_assignment_changed(cell_id: int, bee_id: int) -> void:
     queue_redraw()

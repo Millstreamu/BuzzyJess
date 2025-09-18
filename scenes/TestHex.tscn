@@ -1,8 +1,10 @@
-[gd_scene load_steps=4 format=3]
+[gd_scene load_steps=6 format=3]
 
 [ext_resource type="Script" path="res://scripts/HexGridTest.gd" id="1"]
 [ext_resource type="Script" path="res://scripts/controllers/BuildController.gd" id="2"]
 [ext_resource type="PackedScene" path="res://scenes/UI/BuildRadialMenu.tscn" id="3"]
+[ext_resource type="Script" path="res://scripts/controllers/AssignController.gd" id="4"]
+[ext_resource type="PackedScene" path="res://scenes/UI/AssignBeePanel.tscn" id="5"]
 
 [node name="TestHex" type="Node2D"]
 script = ExtResource("1")
@@ -11,8 +13,15 @@ script = ExtResource("1")
 script = ExtResource("2")
 build_menu_path = NodePath("../CanvasLayer/BuildRadialMenu")
 
+[node name="AssignController" type="Node" parent="."]
+script = ExtResource("4")
+panel_path = NodePath("../CanvasLayer/AssignBeePanel")
+
 [node name="CanvasLayer" type="CanvasLayer" parent="."]
 layer = 1
 
 [node name="BuildRadialMenu" parent="CanvasLayer" instance=ExtResource("3")]
+visible = false
+
+[node name="AssignBeePanel" parent="CanvasLayer" instance=ExtResource("5")]
 visible = false
