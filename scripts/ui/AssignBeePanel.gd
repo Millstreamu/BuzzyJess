@@ -51,8 +51,8 @@ func _apply_panel_style() -> void:
     var style := StyleBoxFlat.new()
     style.bg_color = Color(0.11, 0.1, 0.12, 0.92)
     style.border_color = Color(1.0, 0.77, 0.34)
-    style.border_width_all = 2
-    style.corner_radius_all = 18
+    style.set_border_width_all(2)
+    style.set_corner_radius_all(18)
     panel.add_theme_stylebox_override("panel", style)
 
 func _rebuild_list() -> void:
@@ -76,8 +76,8 @@ func _make_row(bee: Dictionary, eff: int, selected: bool) -> Control:
     container.custom_minimum_size = Vector2(360, 56)
     var style := StyleBoxFlat.new()
     style.bg_color = Color(0.22, 0.2, 0.25, 0.9)
-    style.corner_radius_all = 14
-    style.border_width_all = 2 if selected else 1
+    style.set_corner_radius_all(14)
+    style.set_border_width_all(2 if selected else 1)
     style.border_color = Color(1.0, 0.74, 0.32) if selected else Color(0.45, 0.45, 0.52)
     container.add_theme_stylebox_override("panel", style)
     container.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -117,8 +117,8 @@ func _make_badge(efficiency: int) -> Control:
     badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
     var style := StyleBoxFlat.new()
     style.bg_color = Color(0.28, 0.45, 0.28, 0.9) if efficiency >= 0 else Color(0.6, 0.28, 0.28, 0.9)
-    style.corner_radius_all = 12
-    style.border_width_all = 1
+    style.set_corner_radius_all(12)
+    style.set_border_width_all(1)
     style.border_color = Color(1, 1, 1, 0.6)
     badge.add_theme_stylebox_override("panel", style)
 
