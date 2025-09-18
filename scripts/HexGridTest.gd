@@ -111,13 +111,13 @@ func _try_move_selection(delta: Vector2i) -> void:
         queue_redraw()
 
 func _handle_confirm() -> void:
-    var cell_id := _cell_ids_by_coord.get(_selection, -1)
+    var cell_id: int = _cell_ids_by_coord.get(_selection, -1)
     if cell_id == -1:
         return
     if HiveSystem.get_cell_type(cell_id) != "Empty":
         return
     if _build_controller:
-        var world_position := _get_cell_center(_selection)
+        var world_position: Vector2 = _get_cell_center(_selection)
         _build_controller.open_radial(cell_id, world_position)
 
 func _get_cell_center(coord: Vector2i) -> Vector2:
@@ -126,13 +126,13 @@ func _get_cell_center(coord: Vector2i) -> Vector2:
 func _draw() -> void:
     for coord in _hex_coords:
         var center: Vector2 = _positions.get(coord, Vector2.ZERO) + _grid_offset
-        var points := _hex_points(center)
-        var cell_id := _cell_ids_by_coord.get(coord, -1)
+        var points: PackedVector2Array = _hex_points(center)
+        var cell_id: int = _cell_ids_by_coord.get(coord, -1)
         var cell_type := HiveSystem.get_cell_type(cell_id) if cell_id != -1 else "Empty"
-        var fill_color := _cell_type_colors.get(cell_type, hex_color)
+        var fill_color: Color = _cell_type_colors.get(cell_type, hex_color)
         draw_colored_polygon(points, fill_color)
         if coord == _selection:
-            var outline_points := points.duplicate()
+            var outline_points: PackedVector2Array = points.duplicate()
             outline_points.append(outline_points[0])
             draw_polyline(outline_points, selection_color, selection_line_width)
 
