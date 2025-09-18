@@ -21,6 +21,7 @@ var costs: Array[Dictionary] = []
 var affordable: Array[bool] = []
 var selected_index: int = -1
 
+
 var _is_open: bool = false
 var _open_tween: Tween = null
 var _close_tween: Tween = null
@@ -36,6 +37,7 @@ class RadialOptionControl extends Control:
     var base_color: Color = Color(0.89, 0.7, 0.21)
     var disabled_alpha: float = 0.5
     var _flash_tween: Tween = null
+
 
     func setup(label: StringName, cost: Dictionary, size: Vector2, is_affordable: bool) -> void:
         label_text = String(label)
@@ -66,6 +68,7 @@ class RadialOptionControl extends Control:
         _flash_tween.tween_property(self, "modulate", Color.WHITE, 0.12)
 
     func _draw() -> void:
+
         var icon_center: Vector2 = Vector2(icon_size.x * 0.5, icon_size.y * 0.5)
         var icon_radius: float = min(icon_size.x, icon_size.y) * 0.5
         var color: Color = base_color
