@@ -76,9 +76,9 @@ func _build_rows() -> void:
     for id in ids:
         var row: ResourceRow = ROW_SCENE.instantiate()
         row.set_meta("id", id)
+        list_vbox.add_child(row)
         row.set_icon(IconDB.get_icon_for(id))
         row.set_name_text(ConfigDB.get_resource_display_name(id))
-        list_vbox.add_child(row)
         _rows[id] = row
 
 func _apply_snapshot() -> void:
