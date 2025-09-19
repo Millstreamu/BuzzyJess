@@ -97,7 +97,9 @@ func _unhandled_input(event: InputEvent) -> void:
     if event.is_action_pressed("resources_panel_toggle"):
         if _resources_panel:
             _resources_panel.toggle()
-        accept_event()
+        var viewport := get_viewport()
+        if viewport:
+            viewport.set_input_as_handled()
         return
 
     if (_build_menu and _build_menu.is_open()) or (_assign_controller and _assign_controller.is_panel_open()) or (_resources_panel and _resources_panel.is_open()):
