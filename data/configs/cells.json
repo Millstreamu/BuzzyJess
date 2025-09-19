@@ -1,10 +1,18 @@
 {
   "Brood": {
-    "cost": {"Comb": 10, "Honey": 1},
-    "reverts_to": "Empty",
+    "cost": {"Egg": 1, "Honey": 5, "Pollen": 2},
+    "hatch_seconds": 10,
+    "post_hatch_type": "Damage",
     "mergeable": false,
+    "assignable": false,
     "tick_seconds": 0,
     "produces": {}
+  },
+  "Damage": {
+    "buildable": false,
+    "assignable": false,
+    "mergeable": false,
+    "repair": {"enabled": true, "cost": {}, "seconds": 0}
   },
   "Storage": {
     "cost": {"Comb": 8},

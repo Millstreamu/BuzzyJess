@@ -1,9 +1,12 @@
 extends Node
 
 signal cell_built(cell_id: int, cell_type: StringName)
+signal cell_converted(cell_id: int, new_type: StringName)
 signal resources_changed(snapshot: Dictionary)
 signal build_menu_opened(cell_id: int)
 signal build_menu_closed()
 signal build_failed(cell_id: int)
 signal assignment_changed(cell_id: int, bee_id: int)
 signal production_tick(cell_id: int, resource_id: StringName, amount: int)
+signal bee_created(bee_id: int)
+signal bees_changed(bees: Array)

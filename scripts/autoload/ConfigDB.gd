@@ -47,13 +47,19 @@ func load_cells() -> void:
         return
     _cell_defs = parsed
     for id in BUILD_ORDER:
-        if _cell_defs.has(String(id)):
+        if not _cell_defs.has(String(id)):
+            continue
+        var def: Dictionary = _cell_defs.get(String(id), {})
+        if _is_buildable(def):
             _buildable_ids.append(id)
     for key in _cell_defs.keys():
         if key == "Empty":
             continue
         var id: StringName = StringName(key)
         if _buildable_ids.has(id):
+            continue
+        var def: Dictionary = _cell_defs.get(key, {})
+        if not _is_buildable(def):
             continue
         _buildable_ids.append(id)
 
@@ -127,6 +133,35 @@ func get_cell_production(cell_type: StringName) -> Dictionary:
 func has_cell_type(cell_type: StringName) -> bool:
     return _cell_defs.has(String(cell_type))
 
+func is_cell_buildable(cell_type: StringName) -> bool:
+    var def: Dictionary = _cell_defs.get(String(cell_type), {})
+    return _is_buildable(def)
+
+func is_cell_assignable(cell_type: StringName) -> bool:
+    var def: Dictionary = _cell_defs.get(String(cell_type), {})
+    if def.is_empty():
+        return true
+    var assignable: Variant = def.get("assignable", true)
+    if typeof(assignable) == TYPE_BOOL:
+        return assignable
+    return true
+
+func get_cell_hatch_seconds(cell_type: StringName) -> float:
+    var def: Dictionary = _cell_defs.get(String(cell_type), {})
+    var value: Variant = def.get("hatch_seconds", 0.0)
+    if typeof(value) == TYPE_FLOAT or typeof(value) == TYPE_INT:
+        return float(value)
+    return 0.0
+
+func get_cell_post_hatch_type(cell_type: StringName) -> StringName:
+    var def: Dictionary = _cell_defs.get(String(cell_type), {})
+    var value: Variant = def.get("post_hatch_type", "")
+    if typeof(value) == TYPE_STRING_NAME:
+        return value
+    if typeof(value) == TYPE_STRING:
+        return StringName(String(value))
+    return StringName("")
+
 func get_base_assignment_capacity(cell_type: StringName) -> int:
     var entry: Dictionary = BUILDING_ASSIGNMENT_DEFAULTS.get(String(cell_type), {})
     return int(entry.get("capacity", 0))
@@ -160,3 +195,11 @@ func get_resource_short_name(resource_id: StringName) -> String:
     if def.has("short_name"):
         return String(def.get("short_name", ""))
     return get_resource_display_name(resource_id)
+
+func _is_buildable(def: Dictionary) -> bool:
+    if def.is_empty():
+        return true
+    var value: Variant = def.get("buildable", true)
+    if typeof(value) == TYPE_BOOL:
+        return value
+    return true
