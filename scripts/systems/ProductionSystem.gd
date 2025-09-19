@@ -1,5 +1,4 @@
 extends Node
-class_name ProductionSystem
 
 const HiveSystem := preload("res://scripts/systems/HiveSystem.gd")
 
