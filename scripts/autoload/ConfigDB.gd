@@ -89,7 +89,8 @@ func load_resources() -> void:
             "id": id,
             "display_name": String(entry.get("display_name", String(id_value))),
             "cap": int(entry.get("cap", 0)),
-            "initial": int(entry.get("initial", 0))
+            "initial": int(entry.get("initial", 0)),
+            "short_name": String(entry.get("short_name", String(entry.get("display_name", String(id_value)))))
         }
         _resource_defs.append(def)
         _resource_lookup[String(id)] = def
@@ -103,6 +104,25 @@ func get_cell_cost(cell_type: StringName) -> Dictionary:
     if typeof(cost) == TYPE_DICTIONARY:
         return cost.duplicate(true)
     return {}
+
+func get_cell_tick_seconds(cell_type: StringName) -> float:
+    var def: Dictionary = _cell_defs.get(String(cell_type), {})
+    var tick_value: Variant = def.get("tick_seconds", 0.0)
+    if typeof(tick_value) == TYPE_FLOAT or typeof(tick_value) == TYPE_INT:
+        return float(tick_value)
+    return 0.0
+
+func get_cell_production(cell_type: StringName) -> Dictionary:
+    var def: Dictionary = _cell_defs.get(String(cell_type), {})
+    var produces: Variant = def.get("produces", {})
+    if typeof(produces) != TYPE_DICTIONARY:
+        return {}
+    var result: Dictionary = {}
+    for key in produces.keys():
+        var amount: Variant = produces[key]
+        if typeof(amount) == TYPE_FLOAT or typeof(amount) == TYPE_INT:
+            result[StringName(String(key))] = float(amount)
+    return result
 
 func has_cell_type(cell_type: StringName) -> bool:
     return _cell_defs.has(String(cell_type))
@@ -134,3 +154,9 @@ func get_resource_initial(resource_id: StringName) -> int:
 func get_resource_display_name(resource_id: StringName) -> String:
     var def: Dictionary = _resource_lookup.get(String(resource_id), {})
     return String(def.get("display_name", String(resource_id)))
+
+func get_resource_short_name(resource_id: StringName) -> String:
+    var def: Dictionary = _resource_lookup.get(String(resource_id), {})
+    if def.has("short_name"):
+        return String(def.get("short_name", ""))
+    return get_resource_display_name(resource_id)

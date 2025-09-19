@@ -38,6 +38,9 @@ static func convert_cell_type(cell_id: int, new_type: StringName) -> void:
 static func get_cell_type(cell_id: int) -> String:
     return _cells.get(cell_id, {}).get("type", "Empty")
 
+static func get_cell_entry(cell_id: int) -> Dictionary:
+    return _cells.get(cell_id, {}).duplicate(true)
+
 static func get_building_info(cell_id: int) -> Dictionary:
     if not _cells.has(cell_id):
         return {}
@@ -51,7 +54,8 @@ static func get_building_info(cell_id: int) -> Dictionary:
         "group_id": entry.get("group_id", cell_id),
         "capacity": entry.get("capacity", 0),
         "assigned": entry.get("assigned", []),
-        "efficiency_bonus": entry.get("efficiency_bonus", 0)
+        "efficiency_bonus": entry.get("efficiency_bonus", 0),
+        "size": entry.get("size", 1)
     }
 
 static func get_cells() -> Dictionary:

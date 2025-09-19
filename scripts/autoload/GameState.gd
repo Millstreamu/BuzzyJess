@@ -40,7 +40,8 @@ func get_resources_snapshot() -> Dictionary:
         snap[id] = {
             "qty": int(entry.get("qty", 0)),
             "cap": int(entry.get("cap", 0)),
-            "display_name": entry.get("display_name", String(key))
+            "display_name": entry.get("display_name", String(key)),
+            "short_name": entry.get("short_name", entry.get("display_name", String(key)))
         }
     return snap
 
@@ -121,6 +122,8 @@ func _get_resource_entry(resource_id: StringName) -> Dictionary:
         entry = _default_resource_entry(resource_id)
     if not entry.has("display_name"):
         entry["display_name"] = ConfigDB.get_resource_display_name(resource_id)
+    if not entry.has("short_name"):
+        entry["short_name"] = ConfigDB.get_resource_short_name(resource_id)
     if int(entry.get("cap", 0)) == 0:
         var cap := ConfigDB.get_resource_cap(resource_id)
         if cap > 0:
@@ -131,8 +134,24 @@ func _default_resource_entry(resource_id: StringName) -> Dictionary:
     return {
         "qty": 0,
         "cap": ConfigDB.get_resource_cap(resource_id),
-        "display_name": ConfigDB.get_resource_display_name(resource_id)
+        "display_name": ConfigDB.get_resource_display_name(resource_id),
+        "short_name": ConfigDB.get_resource_short_name(resource_id)
     }
+
+func can_add(resource_id: StringName, amount: int) -> bool:
+    if amount <= 0:
+        return true
+    var entry: Dictionary = _get_resource_entry(resource_id)
+    var cap: int = int(entry.get("cap", 0))
+    if cap <= 0:
+        return true
+    var qty: int = int(entry.get("qty", 0))
+    return qty + amount <= cap
+
+func add_resource(resource_id: StringName, amount: int) -> void:
+    if amount == 0:
+        return
+    adjust_resource_quantity(resource_id, amount)
 
 func _generate_default_bees() -> void:
     bees.clear()
