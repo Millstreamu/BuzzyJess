@@ -176,18 +176,12 @@ func _layout_buttons() -> void:
 func _unhandled_input(event: InputEvent) -> void:
     if not _is_open:
         return
-    if event.is_action_pressed("ui_right"):
-        _select_dir(Vector2.RIGHT)
-        accept_event()
-    elif event.is_action_pressed("ui_left"):
-        _select_dir(Vector2.LEFT)
-        accept_event()
-    elif event.is_action_pressed("ui_up"):
-        _select_dir(Vector2.UP)
-        accept_event()
-    elif event.is_action_pressed("ui_down"):
-        _select_dir(Vector2.DOWN)
-        accept_event()
+    if event.is_action_pressed("ui_right") or event.is_action_pressed("ui_left") or event.is_action_pressed("ui_up") or event.is_action_pressed("ui_down") or event.is_action_released("ui_right") or event.is_action_released("ui_left") or event.is_action_released("ui_up") or event.is_action_released("ui_down"):
+        var dir: Vector2 = Input.get_vector("ui_left", "ui_right", "ui_up", "ui_down")
+        if dir.length_squared() > 0.0:
+            _select_dir(dir)
+            accept_event()
+        return
     elif event.is_action_pressed("confirm"):
         _confirm()
         accept_event()
@@ -198,11 +192,14 @@ func _unhandled_input(event: InputEvent) -> void:
 func _select_dir(dir: Vector2) -> void:
     if options.is_empty():
         return
+    if dir.length_squared() == 0.0:
+        return
+    var dir_normalized: Vector2 = dir.normalized()
     var best_dot: float = -INF
     var idx: int = selected_index
     for i: int in options.size():
         var v: Vector2 = Vector2.RIGHT.rotated(angles[i])
-        var d: float = v.normalized().dot(dir)
+        var d: float = v.normalized().dot(dir_normalized)
         if d > best_dot:
             best_dot = d
             idx = i
@@ -217,7 +214,7 @@ func _update_ring() -> void:
     var local_center: Vector2 = Vector2(radius, 0).rotated(angles[selected_index])
     selection_ring.visible = true
     selection_ring.scale = Vector2.ONE
-    selection_ring.global_position = option_layer.global_position + local_center - selection_ring.pivot_offset
+    selection_ring.position = local_center - selection_ring.pivot_offset
     selection_ring.queue_redraw()
 
 func _confirm() -> void:
