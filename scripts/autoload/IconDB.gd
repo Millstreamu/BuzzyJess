@@ -6,7 +6,9 @@ const RESOURCE_COLORS := {
     "Pollen": Color(0.98, 0.86, 0.38),
     "NectarCommon": Color(0.79, 0.52, 0.91),
     "PetalRed": Color(0.92, 0.32, 0.42),
-    "Egg": Color(0.94, 0.94, 0.82)
+    "Egg": Color(0.94, 0.94, 0.82),
+    "ThistleHerb": Color(0.51, 0.76, 0.55),
+    "ForestTonic": Color(0.35, 0.67, 0.82)
 }
 
 var _icon_cache: Dictionary = {}

@@ -23,10 +23,13 @@ var _cell_defs: Dictionary = {}
 var _buildable_ids: Array[StringName] = []
 var _resource_defs: Array[Dictionary] = []
 var _resource_lookup: Dictionary = {}
+var _herbalist_contracts: Array[Dictionary] = []
+var _herbalist_contract_lookup: Dictionary = {}
 
 func _ready() -> void:
     load_cells()
     load_resources()
+    load_herbalist_contracts()
 
 func load_cells() -> void:
     _cell_defs.clear()
@@ -100,6 +103,47 @@ func load_resources() -> void:
         }
         _resource_defs.append(def)
         _resource_lookup[String(id)] = def
+
+func load_herbalist_contracts() -> void:
+    _herbalist_contracts.clear()
+    _herbalist_contract_lookup.clear()
+    var path: String = "res://data/configs/herbalist_contracts.json"
+    if not FileAccess.file_exists(path):
+        push_warning("herbalist_contracts.json not found at %s" % path)
+        return
+    var file: FileAccess = FileAccess.open(path, FileAccess.READ)
+    if file == null:
+        push_warning("Failed to open %s" % path)
+        return
+    var text: String = file.get_as_text()
+    file.close()
+    var parsed: Variant = JSON.parse_string(text)
+    if typeof(parsed) != TYPE_DICTIONARY:
+        push_warning("Invalid herbalist_contracts.json contents")
+        return
+    var list: Variant = parsed.get("contracts", [])
+    if typeof(list) != TYPE_ARRAY:
+        push_warning("Invalid herbalist_contracts.json: expected 'contracts' array")
+        return
+    for entry in list:
+        if typeof(entry) != TYPE_DICTIONARY:
+            continue
+        var contract: Dictionary = {}
+        var id_value: Variant = entry.get("id", "")
+        if typeof(id_value) != TYPE_STRING and typeof(id_value) != TYPE_STRING_NAME:
+            continue
+        var id_string: String = String(id_value)
+        contract["id"] = StringName(id_string)
+        contract["name"] = String(entry.get("name", id_string))
+        contract["required_bees"] = int(entry.get("required_bees", 0))
+        contract["duration_seconds"] = float(entry.get("duration_seconds", 0))
+        var cost_value: Variant = entry.get("cost", {})
+        contract["cost"] = _parse_resource_amounts(cost_value)
+        var reward_value: Variant = entry.get("reward", {})
+        contract["reward"] = _parse_resource_amounts(reward_value)
+        contract["weight"] = float(entry.get("weight", 1.0))
+        _herbalist_contracts.append(contract)
+        _herbalist_contract_lookup[id_string] = contract
 
 func get_buildable_cell_types() -> Array[StringName]:
     return _buildable_ids.duplicate()
@@ -196,6 +240,23 @@ func get_resource_short_name(resource_id: StringName) -> String:
         return String(def.get("short_name", ""))
     return get_resource_display_name(resource_id)
 
+func get_herbalist_contracts() -> Array[Dictionary]:
+    var list: Array[Dictionary] = []
+    for contract in _herbalist_contracts:
+        list.append(contract.duplicate(true))
+    return list
+
+func get_herbalist_contract(contract_id: StringName) -> Dictionary:
+    var entry: Dictionary = _herbalist_contract_lookup.get(String(contract_id), {})
+    return entry.duplicate(true)
+
+func get_herbalist_reward(contract_id: StringName) -> Dictionary:
+    var contract: Dictionary = get_herbalist_contract(contract_id)
+    var reward_value: Variant = contract.get("reward", {})
+    if typeof(reward_value) == TYPE_DICTIONARY:
+        return reward_value.duplicate(true)
+    return {}
+
 func _is_buildable(def: Dictionary) -> bool:
     if def.is_empty():
         return true
@@ -203,3 +264,13 @@ func _is_buildable(def: Dictionary) -> bool:
     if typeof(value) == TYPE_BOOL:
         return value
     return true
+
+func _parse_resource_amounts(value: Variant) -> Dictionary:
+    if typeof(value) != TYPE_DICTIONARY:
+        return {}
+    var result: Dictionary = {}
+    for key in value.keys():
+        var amount: Variant = value.get(key, 0)
+        if typeof(amount) == TYPE_FLOAT or typeof(amount) == TYPE_INT:
+            result[StringName(String(key))] = int(round(amount))
+    return result

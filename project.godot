@@ -23,4 +23,5 @@ ui_up={"deadzone":0.5,"events":[{"type":"InputEventKey","physical_keycode":41943
 confirm={"deadzone":0.5,"events":[{"type":"InputEventKey","physical_keycode":32}]}
 cancel={"deadzone":0.5,"events":[{"type":"InputEventKey","physical_keycode":90}]}
 resources_panel_toggle={"deadzone":0.5,"events":[{"type":"InputEventKey","physical_keycode":4194305},{"type":"InputEventJoypadButton","button_index":7}]}
+herbalist_panel_toggle={"deadzone":0.5,"events":[{"type":"InputEventKey","physical_keycode":72}]}
 

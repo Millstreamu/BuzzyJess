@@ -1,0 +1,22 @@
+{
+  "contracts": [
+    {
+      "id": "GatherThistle",
+      "name": "Gather Thistle",
+      "required_bees": 3,
+      "duration_seconds": 20,
+      "cost": { "Honey": 10, "Pollen": 5 },
+      "reward": { "ThistleHerb": 1 },
+      "weight": 1
+    },
+    {
+      "id": "ForestTonics",
+      "name": "Brew Forest Tonics",
+      "required_bees": 4,
+      "duration_seconds": 30,
+      "cost": { "Honey": 12, "Pollen": 8 },
+      "reward": { "ForestTonic": 1 },
+      "weight": 1
+    }
+  ]
+}
