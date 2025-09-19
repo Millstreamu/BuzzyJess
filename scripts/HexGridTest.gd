@@ -1,6 +1,7 @@
 extends Node2D
 
 const HiveSystem := preload("res://scripts/systems/HiveSystem.gd")
+const FloatingTextScene := preload("res://scenes/FX/FloatingText.tscn")
 
 @export var hex_size: float = 48.0
 @export var grid_radius: int = 3
@@ -39,6 +40,8 @@ func _ready() -> void:
         Events.cell_built.connect(_on_cell_built)
     if not Events.assignment_changed.is_connected(_on_assignment_changed):
         Events.assignment_changed.connect(_on_assignment_changed)
+    if not Events.production_tick.is_connected(_on_production_tick):
+        Events.production_tick.connect(_on_production_tick)
     queue_redraw()
     var viewport := get_viewport()
     if viewport:
@@ -189,3 +192,25 @@ func _on_cell_built(cell_id: int, cell_type: StringName) -> void:
 
 func _on_assignment_changed(cell_id: int, bee_id: int) -> void:
     queue_redraw()
+
+func _on_production_tick(cell_id: int, resource_id: StringName, amount: int) -> void:
+    if amount <= 0:
+        return
+    if not _coords_by_id.has(cell_id):
+        return
+    var coord: Vector2i = _coords_by_id[cell_id]
+    var center: Vector2 = _get_cell_center(coord)
+    var ft: Node = FloatingTextScene.instantiate()
+    if ft == null:
+        return
+    var short_name: String = ConfigDB.get_resource_short_name(resource_id)
+    if ft is Label:
+        var label_ft: Label = ft
+        add_child(label_ft)
+        label_ft.global_position = center
+        label_ft.setup("+%d %s" % [amount, short_name])
+    else:
+        add_child(ft)
+        ft.global_position = center
+        if ft.has_method("setup"):
+            ft.setup("+%d %s" % [amount, short_name])

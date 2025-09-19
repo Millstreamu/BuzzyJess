@@ -13,6 +13,7 @@ ConfigDB="*res://scripts/autoload/ConfigDB.gd"
 GameState="*res://scripts/autoload/GameState.gd"
 Events="*res://scripts/autoload/Events.gd"
 IconDB="*res://scripts/autoload/IconDB.gd"
+ProductionSystem="*res://scripts/systems/ProductionSystem.gd"
 
 [input]
 ui_right={"deadzone":0.5,"events":[{"type":"InputEventKey","physical_keycode":4194321}]}
