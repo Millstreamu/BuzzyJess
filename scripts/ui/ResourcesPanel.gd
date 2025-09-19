@@ -38,7 +38,7 @@ func _open() -> void:
         return
     _is_open = true
     visible = true
-    raise()
+    move_to_front()
     if _rows.is_empty():
         _build_rows()
     _apply_snapshot()
