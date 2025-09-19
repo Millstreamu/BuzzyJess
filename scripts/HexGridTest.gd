@@ -26,7 +26,8 @@ var _cell_type_colors := {
     "WaxWorkshop": Color(0.7, 0.5, 0.3),
     "CandleHall": Color(0.6, 0.5, 0.9),
     "GuardPost": Color(0.4, 0.6, 0.8),
-    "HerbalistDen": Color(0.5, 0.8, 0.5)
+    "HerbalistDen": Color(0.5, 0.8, 0.5),
+    "Damage": Color(0.25, 0.23, 0.28)
 }
 
 @onready var _build_controller: BuildController = $BuildController
@@ -42,6 +43,8 @@ func _ready() -> void:
         Events.assignment_changed.connect(_on_assignment_changed)
     if not Events.production_tick.is_connected(_on_production_tick):
         Events.production_tick.connect(_on_production_tick)
+    if not Events.cell_converted.is_connected(_on_cell_converted):
+        Events.cell_converted.connect(_on_cell_converted)
     queue_redraw()
     var viewport := get_viewport()
     if viewport:
@@ -135,6 +138,10 @@ func _handle_confirm() -> void:
             var world_position: Vector2 = _get_cell_center(_selection)
             _build_controller.open_radial(cell_id, world_position)
     else:
+        var cell_type_name: StringName = StringName(cell_type)
+        if not ConfigDB.is_cell_assignable(cell_type_name):
+            UIFx.flash_deny()
+            return
         if _assign_controller:
             _assign_controller.open_panel(cell_id)
 
@@ -214,3 +221,6 @@ func _on_production_tick(cell_id: int, resource_id: StringName, amount: int) -> 
         ft.global_position = center
         if ft.has_method("setup"):
             ft.setup("+%d %s" % [amount, short_name])
+
+func _on_cell_converted(_cell_id: int, _new_type: StringName) -> void:
+    queue_redraw()

@@ -5,6 +5,18 @@ var resources: Dictionary = {}
 var bees: Array[Dictionary] = []
 var _bee_lookup: Dictionary = {}
 
+const DEFAULT_BEE_COLORS := [
+    Color(0.96, 0.78, 0.28),
+    Color(0.87, 0.55, 0.2),
+    Color(0.64, 0.72, 0.27),
+    Color(0.59, 0.58, 0.83),
+    Color(0.45, 0.7, 0.74)
+]
+
+var swarm_points: int = 0
+var _next_bee_id: int = 1
+var _next_bee_color_index: int = 0
+
 func _ready() -> void:
     _initialize_resources()
     _generate_default_bees()
@@ -82,6 +94,28 @@ func _initialize_resources() -> void:
         resources[String(id)] = entry
     _emit_resources_changed()
 
+func add_bee() -> int:
+    var bee_id: int = _next_bee_id
+    _next_bee_id += 1
+    var color: Color = _get_next_bee_color()
+    var bee: Dictionary = _create_bee_entry(bee_id, color)
+    bees.append(bee)
+    _bee_lookup[bee_id] = bee
+    inc_swarm(1)
+    _emit_bees_changed()
+    return bee_id
+
+func get_bees_snapshot() -> Array:
+    var snapshot: Array = []
+    for bee in bees:
+        snapshot.append(bee.duplicate(true))
+    return snapshot
+
+func inc_swarm(amount: int) -> void:
+    if amount == 0:
+        return
+    swarm_points = max(0, swarm_points + amount)
+
 func set_resource_quantity(resource_id: StringName, amount: int) -> void:
     var entry: Dictionary = _get_resource_entry(resource_id)
     var cap: int = int(entry.get("cap", 0))
@@ -156,23 +190,17 @@ func add_resource(resource_id: StringName, amount: int) -> void:
 func _generate_default_bees() -> void:
     bees.clear()
     _bee_lookup.clear()
-    var colors := [
-        Color(0.96, 0.78, 0.28),
-        Color(0.87, 0.55, 0.2),
-        Color(0.64, 0.72, 0.27),
-        Color(0.59, 0.58, 0.83),
-        Color(0.45, 0.7, 0.74)
-    ]
-    for i in colors.size():
-        var bee_id := i + 1
-        var bee := {
-            "id": bee_id,
-            "display_name": "Bee %d" % bee_id,
-            "icon": _make_bee_icon(colors[i]),
-            "assigned_group": -1
-        }
+    swarm_points = 0
+    _next_bee_id = 1
+    _next_bee_color_index = 0
+    for color in DEFAULT_BEE_COLORS:
+        var bee_id: int = _next_bee_id
+        _next_bee_id += 1
+        var bee: Dictionary = _create_bee_entry(bee_id, color)
         bees.append(bee)
         _bee_lookup[bee_id] = bee
+        _next_bee_color_index += 1
+    _emit_bees_changed()
 
 func _make_bee_icon(color: Color) -> Texture2D:
     var size := 36
@@ -186,3 +214,23 @@ func _make_bee_icon(color: Color) -> Texture2D:
             if pos.distance_to(center) <= radius:
                 image.set_pixel(x, y, color)
     return ImageTexture.create_from_image(image)
+
+func _create_bee_entry(bee_id: int, color: Color) -> Dictionary:
+    return {
+        "id": bee_id,
+        "display_name": "Bee %d" % bee_id,
+        "icon": _make_bee_icon(color),
+        "assigned_group": -1
+    }
+
+func _get_next_bee_color() -> Color:
+    if DEFAULT_BEE_COLORS.is_empty():
+        return Color(0.9, 0.8, 0.3)
+    var index: int = _next_bee_color_index % DEFAULT_BEE_COLORS.size()
+    var color: Color = DEFAULT_BEE_COLORS[index]
+    _next_bee_color_index += 1
+    return color
+
+func _emit_bees_changed() -> void:
+    if typeof(Events) == TYPE_OBJECT:
+        Events.bees_changed.emit(get_bees_snapshot())

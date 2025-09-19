@@ -21,7 +21,7 @@ func open_panel(cell_id: int) -> void:
         UIFx.flash_deny()
         return
     var cell_type: StringName = StringName(info.get("type", "Empty"))
-    if cell_type == StringName("Empty") or cell_type == StringName("Brood"):
+    if cell_type == StringName("Empty") or not ConfigDB.is_cell_assignable(cell_type):
         UIFx.flash_deny()
         return
     var bees: Array = GameState.get_available_bees()
