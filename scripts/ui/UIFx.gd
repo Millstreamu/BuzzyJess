@@ -7,3 +7,8 @@ static func flash_deny() -> void:
         return
     # In lieu of a full VFX system, emit a simple debug message.
     print("[UIFx] deny flash")
+
+static func show_toast(message: String) -> void:
+    if Engine.is_editor_hint():
+        return
+    print("[UIFx] toast: %s" % message)
