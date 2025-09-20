@@ -6,8 +6,8 @@
 [ext_resource type="Script" path="res://scripts/controllers/AssignController.gd" id="4"]
 [ext_resource type="PackedScene" path="res://scenes/UI/AssignBeePanel.tscn" id="5"]
 [ext_resource type="PackedScene" path="res://scenes/UI/ResourcesPanel.tscn" id="6"]
-[ext_resource type="Script" path="res://scripts/controllers/HerbalistController.gd" id="7"]
-[ext_resource type="PackedScene" path="res://scenes/UI/HerbalistPanel.tscn" id="8"]
+[ext_resource type="Script" path="res://scripts/controllers/GatheringController.gd" id="7"]
+[ext_resource type="PackedScene" path="res://scenes/UI/HarvestPanel.tscn" id="8"]
 
 [node name="TestHex" type="Node2D"]
 script = ExtResource("1")
@@ -20,9 +20,9 @@ build_menu_path = NodePath("../CanvasLayer/BuildRadialMenu")
 script = ExtResource("4")
 panel_path = NodePath("../CanvasLayer/AssignBeePanel")
 
-[node name="HerbalistController" type="Node" parent="."]
+[node name="GatheringController" type="Node" parent="."]
 script = ExtResource("7")
-panel_path = NodePath("../CanvasLayer/HerbalistPanel")
+panel_path = NodePath("../CanvasLayer/HarvestPanel")
 
 [node name="CanvasLayer" type="CanvasLayer" parent="."]
 layer = 1
@@ -33,7 +33,7 @@ visible = false
 [node name="AssignBeePanel" parent="CanvasLayer" instance=ExtResource("5")]
 visible = false
 
-[node name="HerbalistPanel" parent="CanvasLayer" instance=ExtResource("8")]
+[node name="HarvestPanel" parent="CanvasLayer" instance=ExtResource("8")]
 visible = false
 
 [node name="ResourcesPanel" parent="CanvasLayer" instance=ExtResource("6")]

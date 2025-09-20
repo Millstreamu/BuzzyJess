@@ -1,0 +1,20 @@
+{
+  "harvests": [
+    {
+      "id": "WildflowerHarvest",
+      "name": "Wildflower Field",
+      "required_bees": 3,
+      "duration_seconds": 100,
+      "outputs": { "Pollen": 50, "NectarCommon": 30 },
+      "cost": {}
+    },
+    {
+      "id": "MeadowBloomHarvest",
+      "name": "Meadow Blooms",
+      "required_bees": 2,
+      "duration_seconds": 60,
+      "outputs": { "Pollen": 25, "NectarCommon": 12 },
+      "cost": {}
+    }
+  ]
+}

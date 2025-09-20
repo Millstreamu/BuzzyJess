@@ -1,5 +1,5 @@
 extends Control
-class_name HerbalistPanel
+class_name HarvestPanel
 
 signal panel_closed()
 
@@ -12,7 +12,7 @@ const SLIDE_OUT_ANIMATION := StringName("slide_out")
 @onready var list_container: VBoxContainer = $Panel/Layout/ListScroll/VBox
 @onready var footer_label: Label = $Panel/Layout/Footer/Hint
 
-var _contracts: Array[Dictionary] = []
+var _offers: Array[Dictionary] = []
 var _selected: int = 0
 var _is_open: bool = false
 var _closing: bool = false
@@ -25,12 +25,12 @@ func _ready() -> void:
     _apply_panel_style()
     _connect_events()
     if header_label:
-        header_label.text = "Herbalist Contracts"
+        header_label.text = "Harvest Fields"
     if footer_label:
         footer_label.text = "Space = Start    Z = Close"
 
 func open() -> void:
-    _contracts = ConfigDB.get_herbalist_contracts()
+    _offers = ConfigDB.get_harvest_offers()
     _selected = 0
     _closing = false
     _is_open = true
@@ -64,12 +64,12 @@ func _connect_events() -> void:
         return
     if not Events.resources_changed.is_connected(_on_resources_changed):
         Events.resources_changed.connect(_on_resources_changed)
-    if not Events.herbalist_bees_available_changed.is_connected(_on_bees_available_changed):
-        Events.herbalist_bees_available_changed.connect(_on_bees_available_changed)
-    if not Events.herbalist_contract_started.is_connected(_on_contract_started):
-        Events.herbalist_contract_started.connect(_on_contract_started)
-    if not Events.herbalist_contract_completed.is_connected(_on_contract_completed):
-        Events.herbalist_contract_completed.connect(_on_contract_completed)
+    if not Events.gatherer_bees_available_changed.is_connected(_on_bees_available_changed):
+        Events.gatherer_bees_available_changed.connect(_on_bees_available_changed)
+    if not Events.harvest_started.is_connected(_on_harvest_started):
+        Events.harvest_started.connect(_on_harvest_started)
+    if not Events.harvest_completed.is_connected(_on_harvest_completed):
+        Events.harvest_completed.connect(_on_harvest_completed)
 
 func _on_resources_changed(_snapshot: Dictionary) -> void:
     _refresh_if_open()
@@ -77,41 +77,41 @@ func _on_resources_changed(_snapshot: Dictionary) -> void:
 func _on_bees_available_changed(_count: int) -> void:
     _refresh_if_open()
 
-func _on_contract_started(_id: StringName, _end_time: float, _bees: int) -> void:
+func _on_harvest_started(_id: StringName, _end_time: float, _bees: int) -> void:
     _refresh_if_open()
 
-func _on_contract_completed(_id: StringName, _success: bool) -> void:
+func _on_harvest_completed(_id: StringName, _success: bool) -> void:
     _refresh_if_open()
 
 func _refresh_if_open() -> void:
     if not _is_open:
         return
-    _contracts = ConfigDB.get_herbalist_contracts()
-    if _contracts.is_empty():
+    _offers = ConfigDB.get_harvest_offers()
+    if _offers.is_empty():
         _selected = 0
     else:
-        _selected = clamp(_selected, 0, _contracts.size() - 1)
+        _selected = clamp(_selected, 0, _offers.size() - 1)
     _rebuild_rows()
 
 func _rebuild_rows() -> void:
     for child in list_container.get_children():
         child.queue_free()
-    if _contracts.is_empty():
-        list_container.add_child(_make_message_label("No contracts available"))
+    if _offers.is_empty():
+        list_container.add_child(_make_message_label("No harvests available"))
         return
-    _selected = clamp(_selected, 0, _contracts.size() - 1)
-    for i in _contracts.size():
-        var contract: Dictionary = _contracts[i]
-        var has_bees: bool = GameState.get_free_herbalist_bees() >= int(contract.get("required_bees", 0))
-        var cost_value: Variant = contract.get("cost", {})
+    _selected = clamp(_selected, 0, _offers.size() - 1)
+    for i in _offers.size():
+        var offer: Dictionary = _offers[i]
+        var has_bees: bool = GameState.get_free_gatherers() >= int(offer.get("required_bees", 0))
+        var cost_value: Variant = offer.get("cost", {})
         var cost: Dictionary = {}
         if typeof(cost_value) == TYPE_DICTIONARY:
             cost = cost_value
         var has_cost: bool = GameState.can_spend(cost)
-        var row: Control = _make_row(contract, i == _selected, has_bees, has_cost)
+        var row: Control = _make_row(offer, i == _selected, has_bees, has_cost)
         list_container.add_child(row)
 
-func _make_row(contract: Dictionary, selected: bool, has_bees: bool, has_cost: bool) -> Control:
+func _make_row(offer: Dictionary, selected: bool, has_bees: bool, has_cost: bool) -> Control:
     var card := PanelContainer.new()
     card.custom_minimum_size = Vector2(440, 84)
     card.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -132,7 +132,7 @@ func _make_row(contract: Dictionary, selected: bool, has_bees: bool, has_cost: b
 
     var icon_rect := TextureRect.new()
     icon_rect.custom_minimum_size = Vector2(48, 48)
-    icon_rect.texture = _get_contract_icon(contract)
+    icon_rect.texture = _get_offer_icon(offer)
     icon_rect.modulate = Color(1, 1, 1, 0.95) if icon_rect.texture != null else Color(0.8, 0.8, 0.8, 0.65)
     icon_rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
     icon_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -144,15 +144,15 @@ func _make_row(contract: Dictionary, selected: bool, has_bees: bool, has_cost: b
     text_box.add_theme_constant_override("separation", 6)
 
     var name_label := Label.new()
-    name_label.text = String(contract.get("name", "Contract"))
+    name_label.text = String(offer.get("name", "Harvest"))
     name_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
     text_box.add_child(name_label)
 
     var info_label := Label.new()
     info_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-    var required_bees: int = int(contract.get("required_bees", 0))
-    var duration_seconds: int = int(round(float(contract.get("duration_seconds", 0.0))))
-    info_label.text = "Bees: %d    Time: %ds" % [required_bees, duration_seconds]
+    var required_bees: int = int(offer.get("required_bees", 0))
+    var duration_seconds: int = int(round(float(offer.get("duration_seconds", 0.0))))
+    info_label.text = "Gatherers: %d    Time: %ds" % [required_bees, duration_seconds]
     info_label.modulate = Color(1, 1, 1, 0.8)
     text_box.add_child(info_label)
 
@@ -163,7 +163,7 @@ func _make_row(contract: Dictionary, selected: bool, has_bees: bool, has_cost: b
     pill_box.alignment = BoxContainer.ALIGNMENT_END
     pill_box.add_theme_constant_override("separation", 6)
 
-    var cost_text := _format_cost_text(contract.get("cost", {}))
+    var cost_text := _format_cost_text(offer.get("cost", {}))
     var cost_pill := _make_pill("Cost: %s" % cost_text, Color(0.32, 0.29, 0.4, 0.95))
     if not has_cost:
         var label := cost_pill.get_child(0)
@@ -171,9 +171,9 @@ func _make_row(contract: Dictionary, selected: bool, has_bees: bool, has_cost: b
             label.modulate = Color(1.0, 0.5, 0.5, 1.0)
     pill_box.add_child(cost_pill)
 
-    var reward_text := _format_reward_text(contract.get("reward", {}))
-    var reward_pill := _make_pill("Reward: %s" % reward_text, Color(0.28, 0.45, 0.32, 0.95))
-    pill_box.add_child(reward_pill)
+    var yield_text := _format_yield_text(offer.get("outputs", {}))
+    var yield_pill := _make_pill("Yield: %s" % yield_text, Color(0.28, 0.45, 0.32, 0.95))
+    pill_box.add_child(yield_pill)
 
     row.add_child(pill_box)
     card.add_child(row)
@@ -225,7 +225,7 @@ func _format_cost_text(value: Variant) -> String:
         parts.append("%d %s" % [amount, short_name])
     return " ".join(parts)
 
-func _format_reward_text(value: Variant) -> String:
+func _format_yield_text(value: Variant) -> String:
     if typeof(value) != TYPE_DICTIONARY:
         return "None"
     var dict: Dictionary = value
@@ -242,12 +242,12 @@ func _format_reward_text(value: Variant) -> String:
         parts.append("+%d %s" % [amount, short_name])
     return " ".join(parts)
 
-func _get_contract_icon(contract: Dictionary) -> Texture2D:
-    var reward_value: Variant = contract.get("reward", {})
-    if typeof(reward_value) == TYPE_DICTIONARY:
-        for key in reward_value.keys():
+func _get_offer_icon(offer: Dictionary) -> Texture2D:
+    var outputs_value: Variant = offer.get("outputs", {})
+    if typeof(outputs_value) == TYPE_DICTIONARY:
+        for key in outputs_value.keys():
             return IconDB.get_icon_for(StringName(String(key)))
-    var cost_value: Variant = contract.get("cost", {})
+    var cost_value: Variant = offer.get("cost", {})
     if typeof(cost_value) == TYPE_DICTIONARY:
         for key in cost_value.keys():
             return IconDB.get_icon_for(StringName(String(key)))
@@ -265,31 +265,38 @@ func _unhandled_input(event: InputEvent) -> void:
     elif event.is_action_pressed("confirm"):
         _confirm_selection()
         accept_event()
-    elif event.is_action_pressed("cancel") or event.is_action_pressed("herbalist_panel_toggle"):
+    elif event.is_action_pressed("cancel") or event.is_action_pressed("gather_panel_toggle"):
         close()
         accept_event()
 
 func _move_selection(delta: int) -> void:
-    if _contracts.is_empty():
+    if _offers.is_empty():
         return
-    var count: int = _contracts.size()
+    var count: int = _offers.size()
     _selected = (_selected + delta + count) % count
     _rebuild_rows()
 
 func _confirm_selection() -> void:
-    if _contracts.is_empty():
+    if _offers.is_empty():
         UIFx.flash_deny()
         return
-    _selected = clamp(_selected, 0, _contracts.size() - 1)
-    var contract: Dictionary = _contracts[_selected]
-    if not GameState.can_start_contract(contract):
+    _selected = clamp(_selected, 0, _offers.size() - 1)
+    var offer: Dictionary = _offers[_selected]
+    var cost_value: Variant = offer.get("cost", {})
+    var cost: Dictionary = {}
+    if typeof(cost_value) == TYPE_DICTIONARY:
+        cost = cost_value
+    if GameState.get_free_gatherers() < int(offer.get("required_bees", 0)):
         UIFx.flash_deny()
         return
-    if GameState.start_contract(contract):
-        var name: String = String(contract.get("name", "Contract"))
-        var required: int = int(contract.get("required_bees", 0))
-        var duration: int = int(round(float(contract.get("duration_seconds", 0.0))))
-        UIFx.show_toast("Started: %s (%d bees, %ds)" % [name, required, duration])
+    if not GameState.can_spend(cost):
+        UIFx.flash_deny()
+        return
+    if HarvestController.start_harvest(offer):
+        var name: String = String(offer.get("name", "Harvest"))
+        var required: int = int(offer.get("required_bees", 0))
+        var duration: int = int(round(float(offer.get("duration_seconds", 0.0))))
+        UIFx.show_toast("Started: %s (%d gatherers, %ds)" % [name, required, duration])
         close()
     else:
         UIFx.flash_deny()
@@ -313,4 +320,3 @@ func _finalize_close() -> void:
     _closing = false
     if was_open:
         panel_closed.emit()
-

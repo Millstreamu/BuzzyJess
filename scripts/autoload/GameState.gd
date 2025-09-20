@@ -7,7 +7,7 @@ var resources: Dictionary = {}
 var bees: Array[Dictionary] = []
 var _bee_lookup: Dictionary = {}
 
-var herbalist_running: Array[Dictionary] = []
+var _reserved_gatherers: int = 0
 
 const DEFAULT_BEE_COLORS := [
     Color(0.96, 0.78, 0.28),
@@ -22,7 +22,7 @@ var _next_bee_id: int = 1
 var _next_bee_color_index: int = 0
 
 func _ready() -> void:
-    herbalist_running.clear()
+    _reserved_gatherers = 0
     _initialize_resources()
     _generate_default_bees()
     _connect_event_listeners()
@@ -191,106 +191,46 @@ func can_add(resource_id: StringName, amount: int) -> bool:
     var qty: int = int(entry.get("qty", 0))
     return qty + amount <= cap
 
+func space_left_for(resource_id: StringName) -> int:
+    var entry: Dictionary = _get_resource_entry(resource_id)
+    var cap: int = int(entry.get("cap", 0))
+    if cap <= 0:
+        return -1
+    var qty: int = int(entry.get("qty", 0))
+    return max(cap - qty, 0)
+
 func add_resource(resource_id: StringName, amount: int) -> void:
     if amount == 0:
         return
     adjust_resource_quantity(resource_id, amount)
 
-func get_free_herbalist_bees() -> int:
-    var total_assigned: int = _get_total_assigned_herbalist_bees()
-    var reserved: int = _get_reserved_herbalist_bees()
-    return max(total_assigned - reserved, 0)
+func get_free_gatherers() -> int:
+    var total_assigned: int = _get_total_assigned_gatherers()
+    return max(total_assigned - _reserved_gatherers, 0)
 
-func can_start_contract(contract: Dictionary) -> bool:
-    var required_bees: int = int(contract.get("required_bees", 0))
-    if get_free_herbalist_bees() < required_bees:
+func reserve_gatherers(amount: int) -> bool:
+    if amount <= 0:
+        return true
+    if get_free_gatherers() < amount:
         return false
-    var cost_value: Variant = contract.get("cost", {})
-    var cost: Dictionary = {}
-    if typeof(cost_value) == TYPE_DICTIONARY:
-        cost = cost_value
-    return can_spend(cost)
-
-func start_contract(contract: Dictionary) -> bool:
-    if not can_start_contract(contract):
-        return false
-    var cost_value: Variant = contract.get("cost", {})
-    var cost: Dictionary = {}
-    if typeof(cost_value) == TYPE_DICTIONARY:
-        cost = cost_value
-    if not spend(cost):
-        return false
-    var contract_id: StringName = StringName(String(contract.get("id", "")))
-    var required_bees: int = int(contract.get("required_bees", 0))
-    var duration: float = float(contract.get("duration_seconds", 0.0))
-    var end_time: float = Time.get_unix_time_from_system() + duration
-    var entry := {
-        "id": contract_id,
-        "end_time": end_time,
-        "required_bees": required_bees
-    }
-    herbalist_running.append(entry)
-    var timer := _create_herbalist_timer(duration)
-    if timer != null:
-        timer.timeout.connect(func() -> void:
-            _on_herbalist_timer_timeout(contract_id, end_time)
-        , CONNECT_ONE_SHOT)
-    Events.herbalist_contract_started.emit(contract_id, end_time, required_bees)
-    Events.herbalist_bees_available_changed.emit(get_free_herbalist_bees())
+    _reserved_gatherers += amount
+    if typeof(Events) == TYPE_OBJECT:
+        Events.gatherer_bees_available_changed.emit(get_free_gatherers())
     return true
 
-func complete_contract(index: int) -> void:
-    if index < 0 or index >= herbalist_running.size():
+func free_gatherers(amount: int) -> void:
+    if amount <= 0:
         return
-    var entry: Dictionary = herbalist_running[index]
-    herbalist_running.remove_at(index)
-    var contract_id: StringName = entry.get("id", StringName(""))
-    var contract: Dictionary = ConfigDB.get_herbalist_contract(contract_id)
-    var success: bool = not contract.is_empty()
-    if success:
-        var reward_value: Variant = contract.get("reward", {})
-        if typeof(reward_value) == TYPE_DICTIONARY:
-            for key in reward_value.keys():
-                var amount: int = int(reward_value.get(key, 0))
-                if amount == 0:
-                    continue
-                add_resource(StringName(String(key)), amount)
-    Events.herbalist_contract_completed.emit(contract_id, success)
-    Events.herbalist_bees_available_changed.emit(get_free_herbalist_bees())
+    _reserved_gatherers = max(0, _reserved_gatherers - amount)
+    if typeof(Events) == TYPE_OBJECT:
+        Events.gatherer_bees_available_changed.emit(get_free_gatherers())
 
-func _create_herbalist_timer(duration: float) -> SceneTreeTimer:
-    var seconds: float = max(duration, 0.0)
-    var tree: SceneTree = get_tree()
-    if tree == null:
-        return null
-    return tree.create_timer(seconds)
-
-func _on_herbalist_timer_timeout(contract_id: StringName, end_time: float) -> void:
-    _complete_contract_by_id(contract_id, end_time)
-
-func _complete_contract_by_id(contract_id: StringName, end_time: float) -> void:
-    for i in herbalist_running.size():
-        var entry: Dictionary = herbalist_running[i]
-        var entry_id: StringName = entry.get("id", StringName(""))
-        if entry_id != contract_id:
-            continue
-        var entry_end: float = float(entry.get("end_time", 0.0))
-        if is_equal_approx(entry_end, end_time):
-            complete_contract(i)
-            return
-
-func _get_reserved_herbalist_bees() -> int:
-    var reserved: int = 0
-    for entry in herbalist_running:
-        reserved += int(entry.get("required_bees", 0))
-    return reserved
-
-func _get_total_assigned_herbalist_bees() -> int:
+func _get_total_assigned_gatherers() -> int:
     var total: int = 0
     var cells: Dictionary = HiveSystem.get_cells()
     for entry in cells.values():
         var type_string: String = String(entry.get("type", ""))
-        if type_string != "HerbalistDen":
+        if type_string != "GatheringHut":
             continue
         var assigned: Variant = entry.get("assigned", [])
         if typeof(assigned) == TYPE_ARRAY:
@@ -307,12 +247,12 @@ func _connect_event_listeners() -> void:
 
 func _on_assignment_changed(cell_id: int, _bee_id: int) -> void:
     var type_string: String = HiveSystem.get_cell_type(cell_id)
-    if type_string != "HerbalistDen":
+    if type_string != "GatheringHut":
         return
-    Events.herbalist_bees_available_changed.emit(get_free_herbalist_bees())
+    Events.gatherer_bees_available_changed.emit(get_free_gatherers())
 
 func _on_cell_converted(_cell_id: int, _new_type: StringName) -> void:
-    Events.herbalist_bees_available_changed.emit(get_free_herbalist_bees())
+    Events.gatherer_bees_available_changed.emit(get_free_gatherers())
 
 func _generate_default_bees() -> void:
     bees.clear()
