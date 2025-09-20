@@ -1,5 +1,4 @@
 extends Node
-class_name HarvestController
 
 const TICK_INTERVAL := 1.0
 
