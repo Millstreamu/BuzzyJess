@@ -26,13 +26,13 @@ var _cell_type_colors := {
     "WaxWorkshop": Color(0.7, 0.5, 0.3),
     "CandleHall": Color(0.6, 0.5, 0.9),
     "GuardPost": Color(0.4, 0.6, 0.8),
-    "HerbalistDen": Color(0.5, 0.8, 0.5),
+    "GatheringHut": Color(0.5, 0.8, 0.5),
     "Damage": Color(0.25, 0.23, 0.28)
 }
 
 @onready var _build_controller: BuildController = $BuildController
 @onready var _assign_controller: AssignController = $AssignController
-@onready var _herbalist_controller: HerbalistController = $HerbalistController
+@onready var _gathering_controller: GatheringController = $GatheringController
 @onready var _build_menu: BuildRadialMenu = $CanvasLayer/BuildRadialMenu
 @onready var _resources_panel: ResourcesPanel = $CanvasLayer/ResourcesPanel
 
@@ -46,8 +46,8 @@ func _ready() -> void:
         Events.production_tick.connect(_on_production_tick)
     if not Events.cell_converted.is_connected(_on_cell_converted):
         Events.cell_converted.connect(_on_cell_converted)
-    if not Events.herbalist_contract_completed.is_connected(_on_herbalist_contract_completed):
-        Events.herbalist_contract_completed.connect(_on_herbalist_contract_completed)
+    if not Events.harvest_tick.is_connected(_on_harvest_tick):
+        Events.harvest_tick.connect(_on_harvest_tick)
     queue_redraw()
     var viewport := get_viewport()
     if viewport:
@@ -103,9 +103,9 @@ func _update_offset() -> void:
     _grid_offset = get_viewport_rect().size * 0.5 - grid_center
 
 func _unhandled_input(event: InputEvent) -> void:
-    if event.is_action_pressed("herbalist_panel_toggle"):
-        if _herbalist_controller:
-            _herbalist_controller.toggle_panel()
+    if event.is_action_pressed("gather_panel_toggle"):
+        if _gathering_controller:
+            _gathering_controller.toggle_panel()
         var viewport_toggle := get_viewport()
         if viewport_toggle:
             viewport_toggle.set_input_as_handled()
@@ -119,7 +119,7 @@ func _unhandled_input(event: InputEvent) -> void:
             viewport.set_input_as_handled()
         return
 
-    if (_build_menu and _build_menu.is_open()) or (_assign_controller and _assign_controller.is_panel_open()) or (_resources_panel and _resources_panel.is_open()) or (_herbalist_controller and _herbalist_controller.is_panel_open()):
+    if (_build_menu and _build_menu.is_open()) or (_assign_controller and _assign_controller.is_panel_open()) or (_resources_panel and _resources_panel.is_open()) or (_gathering_controller and _gathering_controller.is_panel_open()):
         return
 
     if event.is_action_pressed("ui_right"):
@@ -205,10 +205,10 @@ func _hex_points(center: Vector2) -> PackedVector2Array:
         points.append(point)
     return points
 
-func _on_cell_built(cell_id: int, cell_type: StringName) -> void:
+func _on_cell_built(_cell_id: int, _cell_type: StringName) -> void:
     queue_redraw()
 
-func _on_assignment_changed(cell_id: int, bee_id: int) -> void:
+func _on_assignment_changed(_cell_id: int, _bee_id: int) -> void:
     queue_redraw()
 
 func _on_production_tick(cell_id: int, resource_id: StringName, amount: int) -> void:
@@ -221,17 +221,17 @@ func _on_production_tick(cell_id: int, resource_id: StringName, amount: int) -> 
     var short_name: String = ConfigDB.get_resource_short_name(resource_id)
     _spawn_floating_text(center, "+%d %s" % [amount, short_name])
 
-func _on_herbalist_contract_completed(contract_id: StringName, success: bool) -> void:
-    if not success:
+func _on_harvest_tick(_id: StringName, _time_left: float, partials: Dictionary) -> void:
+    if typeof(partials) != TYPE_DICTIONARY or partials.is_empty():
         return
-    var contract: Dictionary = ConfigDB.get_herbalist_contract(contract_id)
-    if contract.is_empty():
-        return
-    var reward_text: String = _format_contract_reward(contract.get("reward", {}))
-    if reward_text.is_empty():
-        return
-    var position: Vector2 = _find_herbalist_den_position()
-    _spawn_floating_text(position, reward_text)
+    var position: Vector2 = _find_gathering_hut_position()
+    for key in partials.keys():
+        var amount: int = int(partials.get(key, 0))
+        if amount <= 0:
+            continue
+        var resource_id: StringName = StringName(String(key))
+        var short_name: String = ConfigDB.get_resource_short_name(resource_id)
+        _spawn_floating_text(position, "+%d %s" % [amount, short_name])
 
 func _on_cell_converted(_cell_id: int, _new_type: StringName) -> void:
     queue_redraw()
@@ -254,28 +254,11 @@ func _spawn_floating_text(position: Vector2, text: String) -> void:
         if ft.has_method("setup"):
             ft.setup(text)
 
-func _format_contract_reward(value: Variant) -> String:
-    if typeof(value) != TYPE_DICTIONARY:
-        return ""
-    var dict: Dictionary = value
-    if dict.is_empty():
-        return ""
-    var keys: Array = []
-    for key in dict.keys():
-        keys.append(String(key))
-    keys.sort()
-    var parts: Array[String] = []
-    for key_string in keys:
-        var amount: int = int(dict.get(StringName(key_string), dict.get(key_string, 0)))
-        var short_name: String = ConfigDB.get_resource_short_name(StringName(key_string))
-        parts.append("+%d %s" % [amount, short_name])
-    return " ".join(parts)
-
-func _find_herbalist_den_position() -> Vector2:
+func _find_gathering_hut_position() -> Vector2:
     var cells: Dictionary = HiveSystem.get_cells()
     for cell_id in cells.keys():
         var entry: Dictionary = cells[cell_id]
-        if String(entry.get("type", "")) != "HerbalistDen":
+        if String(entry.get("type", "")) != "GatheringHut":
             continue
         var id_int: int = int(cell_id)
         if _coords_by_id.has(id_int):

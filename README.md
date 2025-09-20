@@ -33,7 +33,7 @@ New bee: Place Brood (1 Comb + 1 Honey), instant egg, hatch 10s, cell reverts to
 
 5) Cells (instant build) & Merging
 
-Types: Brood (non-merge), Storage, Honey Vat, Wax Workshop, Candle Hall, Guard Post, Herbalist Den.
+Types: Brood (non-merge), Storage, Honey Vat, Wax Workshop, Candle Hall, Guard Post, Gathering Hut.
 
 Merging: Adjacent (edge) same-type cells form a building group (max size 7).
 
@@ -59,7 +59,7 @@ Candle Hall (Arcanists): cap 5; ritual 60s − 5s/bee (min 20s); roll 3; pay on 
 
 Guard Post (Guards): cap 5; Defense Meter gen +1/guard/tick; tick 5s, upgrades to 4s/3s; per level also +1 gen/guard; upgrade cost doubles (base: 1 Comb + 1 Honey + 1 Red Petal).
 
-Herbalist Den: cap 3; contracts timer-generated; base 20s (≥3 bees), −3s per extra bee, floor 10s; start cost 10 Honey + 5 Pollen; always succeed, chance bonus; rewards TBD.
+Gathering Hut: cap 3; contracts timer-generated; base 20s (≥3 bees), −3s per extra bee, floor 10s; start cost 10 Honey + 5 Pollen; always succeed, chance bonus; rewards TBD.
 
 6) Outside Fields (fixed map)
 
@@ -220,7 +220,7 @@ Data (JSON) — keys & minimal schemas
     "ritual":{"base_seconds":60,"per_bee_reduction":5,"floor_seconds":20,"pay_on_cast":true}},
   "GuardPost":{"cost":{"Comb":1,"Honey":1},"upgrade_base_cost":{"Comb":1,"Honey":1,"PetalRed":1},
     "cap_base":5,"tick_seconds":[5,4,3],"gen_per_guard_per_level":[1,2,3],"mergeable":true},
-  "HerbalistDen":{"cost":{"Comb":1,"Honey":1,"Pollen":1},"cap_base":3,"mergeable":true,
+  "GatheringHut":{"cost":{"Comb":1,"Honey":1,"Pollen":1},"cap_base":3,"mergeable":true,
     "contract":{"base_seconds":20,"min_bees":3,"per_extra_bee_reduction":3,"floor_seconds":10,
                 "start_cost":{"Honey":10,"Pollen":5}}}
 }

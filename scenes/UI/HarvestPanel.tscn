@@ -1,6 +1,6 @@
 [gd_scene load_steps=5 format=3]
 
-[ext_resource type="Script" path="res://scripts/ui/HerbalistPanel.gd" id="1"]
+[ext_resource type="Script" path="res://scripts/ui/HarvestPanel.gd" id="1"]
 
 [sub_resource type="Animation" id="1"]
 resource_name = "slide_in"
@@ -40,7 +40,7 @@ _anims = {
 "slide_out": SubResource("2")
 }
 
-[node name="HerbalistPanel" type="Control"]
+[node name="HarvestPanel" type="Control"]
 layout_mode = 1
 anchors_preset = 1
 anchor_right = 1.0
@@ -89,7 +89,7 @@ custom_constants/separation = 18
 [node name="Header" type="Label" parent="Panel/Layout"]
 layout_mode = 2
 size_flags_horizontal = 3
-text = "Herbalist Contracts"
+text = "Harvest Fields"
 horizontal_alignment = 1
 
 [node name="ListScroll" type="ScrollContainer" parent="Panel/Layout"]

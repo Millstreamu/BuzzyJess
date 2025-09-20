@@ -44,7 +44,7 @@
     "tick_seconds": 5,
     "produces": {"Pollen": 1}
   },
-  "HerbalistDen": {
+  "GatheringHut": {
     "cost": {"Comb": 3, "Honey": 3, "Pollen": 6},
     "mergeable": true,
     "tick_seconds": 7,
