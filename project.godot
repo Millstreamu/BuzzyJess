@@ -14,6 +14,8 @@ GameState="*res://scripts/autoload/GameState.gd"
 Events="*res://scripts/autoload/Events.gd"
 IconDB="*res://scripts/autoload/IconDB.gd"
 ProductionSystem="*res://scripts/systems/ProductionSystem.gd"
+DefenseSystem="*res://scripts/systems/DefenseSystem.gd"
+ThreatSystem="*res://scripts/systems/ThreatSystem.gd"
 HarvestController="*res://scripts/autoload/HarvestController.gd"
 
 [input]

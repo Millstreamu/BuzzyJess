@@ -20,6 +20,15 @@ var hive_cell_states: Dictionary = {}
 
 var queen_id: StringName = StringName("")
 var modifiers: Dictionary = {}
+var defense_meter: int = 0
+var last_threat_end_time: float = 0.0
+var threat_counts: Dictionary = {}
+var active_threat: Variant = null
+var run_start_time: float = 0.0
+var boss_started: bool = false
+var boss_warning_end_time: float = 0.0
+var _game_over_reason: String = ""
+var _game_over_time: float = 0.0
 
 const DEFAULT_BEE_COLORS := [
     Color(0.96, 0.78, 0.28),
@@ -40,6 +49,19 @@ func _ready() -> void:
     _initialize_resources()
     _generate_default_bees()
     _connect_event_listeners()
+    run_start_time = Time.get_unix_time_from_system()
+    defense_meter = 0
+    last_threat_end_time = run_start_time
+    threat_counts.clear()
+    active_threat = null
+    boss_started = false
+    boss_warning_end_time = 0.0
+    _game_over_reason = ""
+    _game_over_time = 0.0
+    if typeof(Events) == TYPE_OBJECT:
+        if not Events.game_over.is_connected(_on_game_over):
+            Events.game_over.connect(_on_game_over)
+        Events.defense_meter_changed.emit(defense_meter)
 
 func reset_queen_selection() -> void:
     queen_id = StringName("")
@@ -236,6 +258,62 @@ func add_resource(resource_id: StringName, amount: int) -> void:
         return
     adjust_resource_quantity(resource_id, amount)
 
+func get_effective_defense() -> int:
+    var base: int = max(defense_meter, 0)
+    var bonus_value: Variant = modifiers.get("defense_meter_bonus", 0)
+    if typeof(bonus_value) == TYPE_FLOAT or typeof(bonus_value) == TYPE_INT:
+        base += int(round(float(bonus_value)))
+    return max(base, 0)
+
+func add_defense(amount: int) -> void:
+    if amount == 0:
+        return
+    defense_meter = max(defense_meter + amount, 0)
+    if typeof(Events) == TYPE_OBJECT:
+        Events.defense_meter_changed.emit(defense_meter)
+
+func clear_defense_for_debug() -> void:
+    defense_meter = 0
+    if typeof(Events) == TYPE_OBJECT:
+        Events.defense_meter_changed.emit(defense_meter)
+
+func preview_next_threat_power(base_power: int) -> int:
+    var adjusted: float = float(max(base_power, 0))
+    var delta_value: Variant = modifiers.get("next_threat_power_delta", 0.0)
+    if typeof(delta_value) == TYPE_FLOAT or typeof(delta_value) == TYPE_INT:
+        adjusted *= 1.0 + float(delta_value)
+    var flat_value: Variant = modifiers.get("next_threat_power_flat", 0)
+    if typeof(flat_value) == TYPE_FLOAT or typeof(flat_value) == TYPE_INT:
+        adjusted += float(flat_value)
+    return max(0, int(round(adjusted)))
+
+func consume_next_threat_modifiers(base_power: int) -> Dictionary:
+    var result := {
+        "power": preview_next_threat_power(base_power),
+        "auto_win": false
+    }
+    var auto_value: Variant = modifiers.get("next_threat_auto_win", false)
+    if typeof(auto_value) == TYPE_BOOL:
+        result["auto_win"] = auto_value
+    elif typeof(auto_value) == TYPE_INT:
+        result["auto_win"] = int(auto_value) != 0
+    if modifiers.has("next_threat_power_delta"):
+        modifiers.erase("next_threat_power_delta")
+    if modifiers.has("next_threat_power_flat"):
+        modifiers.erase("next_threat_power_flat")
+    if modifiers.has("next_threat_auto_win"):
+        modifiers.erase("next_threat_auto_win")
+    return result
+
+func get_run_elapsed_seconds() -> float:
+    return Time.get_unix_time_from_system() - run_start_time
+
+func is_game_over() -> bool:
+    return not _game_over_reason.is_empty()
+
+func get_game_over_reason() -> String:
+    return _game_over_reason
+
 func get_free_gatherers() -> int:
     var total_assigned: int = _get_total_assigned_gatherers()
     return max(total_assigned - _reserved_gatherers, 0)
@@ -295,6 +373,11 @@ func _connect_event_listeners() -> void:
         Events.assignment_changed.connect(_on_assignment_changed)
     if not Events.cell_converted.is_connected(_on_cell_converted):
         Events.cell_converted.connect(_on_cell_converted)
+
+func _on_game_over(reason: String) -> void:
+    if _game_over_reason.is_empty():
+        _game_over_reason = String(reason)
+        _game_over_time = Time.get_unix_time_from_system()
 
 func _on_assignment_changed(cell_id: int, _bee_id: int) -> void:
     var type_string: String = HiveSystem.get_cell_type(cell_id)

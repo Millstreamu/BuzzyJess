@@ -1,0 +1,23 @@
+{
+  "global": {
+    "base_power": 10,
+    "power_growth": "x2",
+    "warning_seconds": 300,
+    "min_spawn_gap_seconds": 180,
+    "resolve": "single_check"
+  },
+  "list": [
+    {"id": "Bear", "name": "Bear"},
+    {"id": "WaspSwarm", "name": "Wasp Swarm"},
+    {"id": "Storm", "name": "Storm"},
+    {"id": "Mites", "name": "Mites"},
+    {"id": "RobberBees", "name": "Robber Bees"}
+  ],
+  "weights": {
+    "Bear": 1,
+    "WaspSwarm": 1,
+    "Storm": 1,
+    "Mites": 1,
+    "RobberBees": 1
+  }
+}
