@@ -3,6 +3,7 @@ class_name HiveSystem
 
 static var _cells: Dictionary = {}
 static var _hatch_timers: Dictionary = {}
+static var _center_cell_id: int = -1
 
 const EMPTY_TYPE := StringName("Empty")
 const BROOD_TYPE := StringName("Brood")
@@ -11,6 +12,7 @@ const DAMAGE_TYPE := StringName("Damage")
 static func reset() -> void:
     _cells.clear()
     _hatch_timers.clear()
+    _center_cell_id = -1
 
 static func register_cell(cell_id: int, data: Dictionary) -> void:
     var entry: Dictionary = data.duplicate(true)
@@ -22,6 +24,12 @@ static func register_cell(cell_id: int, data: Dictionary) -> void:
     entry["size"] = entry.get("size", 1)
     entry["efficiency_bonus"] = entry.get("efficiency_bonus", 0)
     _cells[cell_id] = entry
+
+static func set_center_cell(cell_id: int) -> void:
+    _center_cell_id = cell_id
+
+static func get_center_cell_id() -> int:
+    return _center_cell_id
 
 static func convert_cell_type(cell_id: int, new_type: StringName) -> void:
     if not _cells.has(cell_id):
@@ -177,6 +185,12 @@ static func _on_hatch_timer_timeout(cell_id: int) -> void:
         var bee_id: int = GameState.add_bee()
         if typeof(Events) == TYPE_OBJECT:
             Events.bee_created.emit(bee_id)
+        var extra: int = int(GameState.modifiers.get("brood_extra_bees", 0))
+        if extra > 0:
+            for _i in range(extra):
+                var extra_id: int = GameState.add_bee()
+                if typeof(Events) == TYPE_OBJECT:
+                    Events.bee_created.emit(extra_id)
     var next_type: StringName = ConfigDB.get_cell_post_hatch_type(current_type_name)
     if String(next_type) == "":
         next_type = EMPTY_TYPE

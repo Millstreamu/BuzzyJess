@@ -7,7 +7,8 @@ var _jobs: Dictionary = {}
 func start_harvest(harvest: Dictionary) -> bool:
     if harvest.is_empty():
         return false
-    var required_bees: int = int(harvest.get("required_bees", 0))
+    var base_required_bees: int = int(harvest.get("required_bees", 0))
+    var required_bees: int = GameState.get_harvest_bee_requirement(base_required_bees)
     if GameState.get_free_gatherers() < required_bees:
         return false
     var cost_value: Variant = harvest.get("cost", {})
@@ -42,6 +43,7 @@ func start_harvest(harvest: Dictionary) -> bool:
         "id": job_id,
         "name": name,
         "required_bees": required_bees,
+        "base_required_bees": base_required_bees,
         "duration": duration,
         "end_time": end_time,
         "t_delay": delay_seconds,

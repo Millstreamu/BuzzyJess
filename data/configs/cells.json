@@ -49,5 +49,10 @@
     "mergeable": true,
     "tick_seconds": 7,
     "produces": {"Pollen": 1}
+  },
+  "QueenSeat": {
+    "buildable": false,
+    "assignable": false,
+    "mergeable": false
   }
 }

@@ -1,6 +1,8 @@
 extends Node
 
 const HiveSystem := preload("res://scripts/systems/HiveSystem.gd")
+const NECTAR_COMMON := StringName("NectarCommon")
+const HONEY_RESOURCE := StringName("Honey")
 
 var _timers: Dictionary = {}
 var _group_to_cell: Dictionary = {}
@@ -140,6 +142,11 @@ func _process_group_tick(group_id: int) -> void:
             GameState.add_resource(res_id, amount)
             Events.production_tick.emit(cell_id, res_id, amount)
             produced_any = true
+            if type_str == "HoneyVat" and res_id == HONEY_RESOURCE:
+                var refund: int = int(GameState.modifiers.get("honey_vat_refund_nectar_common", 0))
+                if refund > 0 and GameState.can_add(NECTAR_COMMON, refund):
+                    GameState.add_resource(NECTAR_COMMON, refund)
+                    Events.production_tick.emit(cell_id, NECTAR_COMMON, refund)
         else:
             blocked_by_cap = true
     if produced_any:

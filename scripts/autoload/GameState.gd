@@ -2,6 +2,13 @@ extends Node
 
 const HiveSystem := preload("res://scripts/systems/HiveSystem.gd")
 
+const DEFAULT_QUEEN_MODIFIERS := {
+    "brood_extra_bees": 0,
+    "harvest_bee_cost_delta": 0,
+    "harvest_bee_cost_min": 1,
+    "honey_vat_refund_nectar_common": 0
+}
+
 var resources: Dictionary = {}
 
 var bees: Array[Dictionary] = []
@@ -10,6 +17,9 @@ var _bee_lookup: Dictionary = {}
 var _reserved_gatherers: int = 0
 
 var hive_cell_states: Dictionary = {}
+
+var queen_id: StringName = StringName("")
+var modifiers: Dictionary = {}
 
 const DEFAULT_BEE_COLORS := [
     Color(0.96, 0.78, 0.28),
@@ -26,9 +36,19 @@ var _next_bee_color_index: int = 0
 func _ready() -> void:
     _reserved_gatherers = 0
     hive_cell_states.clear()
+    reset_queen_selection()
     _initialize_resources()
     _generate_default_bees()
     _connect_event_listeners()
+
+func reset_queen_selection() -> void:
+    queen_id = StringName("")
+    _reset_queen_modifiers()
+
+func _reset_queen_modifiers() -> void:
+    modifiers.clear()
+    for key in DEFAULT_QUEEN_MODIFIERS.keys():
+        modifiers[key] = DEFAULT_QUEEN_MODIFIERS[key]
 
 func can_afford(cost: Dictionary) -> bool:
     for key in cost.keys():
@@ -236,6 +256,25 @@ func free_gatherers(amount: int) -> void:
     _reserved_gatherers = max(0, _reserved_gatherers - amount)
     if typeof(Events) == TYPE_OBJECT:
         Events.gatherer_bees_available_changed.emit(get_free_gatherers())
+
+func apply_queen_effects(effects: Dictionary) -> void:
+    _reset_queen_modifiers()
+    for key in effects.keys():
+        var key_string: String = String(key)
+        var value: Variant = effects.get(key, 0)
+        if typeof(value) == TYPE_FLOAT or typeof(value) == TYPE_INT:
+            modifiers[key_string] = int(round(float(value)))
+        else:
+            modifiers[key_string] = value
+    if typeof(Events) == TYPE_OBJECT:
+        Events.queen_selected.emit(queen_id, modifiers.duplicate(true))
+
+func get_harvest_bee_requirement(base_required_bees: int) -> int:
+    var delta: int = int(modifiers.get("harvest_bee_cost_delta", DEFAULT_QUEEN_MODIFIERS["harvest_bee_cost_delta"]))
+    var minimum: int = int(modifiers.get("harvest_bee_cost_min", DEFAULT_QUEEN_MODIFIERS["harvest_bee_cost_min"]))
+    var required: int = base_required_bees + delta
+    required = max(minimum, required)
+    return max(required, 0)
 
 func _get_total_assigned_gatherers() -> int:
     var total: int = 0
