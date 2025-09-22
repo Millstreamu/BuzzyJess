@@ -174,16 +174,16 @@ func _make_trait_badge(code: String, tooltip: String) -> PanelContainer:
     badge.add_child(label)
     return badge
 
-func short_code_for(trait: StringName) -> String:
-    var id: String = String(trait)
+func short_code_for(trait_id: StringName) -> String:
+    var id: String = String(trait_id)
     if id == "Construction":
         return "CON"
     elif id == "Gather":
         return "GAT"
     return "TRT"
 
-func trait_display_name(trait: StringName) -> String:
-    var id: String = String(trait)
+func trait_display_name(trait_id: StringName) -> String:
+    var id: String = String(trait_id)
     if id == "Construction":
         return "Construction"
     elif id == "Gather":
