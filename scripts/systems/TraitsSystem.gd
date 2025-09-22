@@ -59,8 +59,8 @@ func generate_for_rarity(rarity: StringName, count: int, rng: RandomNumberGenera
             out.append(trait_id)
     return out
 
-func bee_has(bee_id: int, trait: StringName) -> bool:
-    if bee_id <= 0 or trait == StringName(""):
+func bee_has(bee_id: int, trait_id: StringName) -> bool:
+    if bee_id <= 0 or trait_id == StringName(""):
         return false
     if typeof(GameState) != TYPE_OBJECT:
         return false
@@ -70,7 +70,7 @@ func bee_has(bee_id: int, trait: StringName) -> bool:
     var traits_value: Variant = bee.get("traits", [])
     if typeof(traits_value) != TYPE_ARRAY:
         return false
-    var target: StringName = _to_string_name(trait)
+    var target: StringName = _to_string_name(trait_id)
     if target == StringName(""):
         return false
     for entry in traits_value:
