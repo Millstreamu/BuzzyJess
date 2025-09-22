@@ -40,7 +40,9 @@ func request_build(cell_id: int, cell_type: StringName) -> bool:
         UIFx.flash_deny()
         emit_signal("build_failed", cell_id)
         return false
-    var base_cost: Dictionary = is_new_build ? build_config.get_cost_dictionary() : {}
+    var base_cost: Dictionary = {}
+    if is_new_build:
+        base_cost = build_config.get_cost_dictionary()
     var specialization_cost: Dictionary = ConfigDB.get_cell_cost(cell_type)
     var total_cost: Dictionary = _combine_costs(base_cost, specialization_cost)
     var is_brood: bool = cell_type == StringName("Brood")

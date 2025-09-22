@@ -564,11 +564,14 @@ func get_boss_cfg() -> Dictionary:
 func get_traits_cfg() -> Dictionary:
     return _traits_cfg.duplicate(true)
 
-func eggs_get_traits_per_rarity(rarity: StringName) -> int:
-    var key: String = String(rarity)
-    if key.is_empty():
-        key = "Common"
-    return int(_traits_per_rarity.get(key, 0))
+func eggs_get_traits_per_rarity(tier: StringName) -> int:
+    var key_string: String = String(tier)
+    if key_string.is_empty():
+        key_string = "Common"
+    var key: StringName = StringName(key_string)
+    if _egg_traits_per_rarity.has(key):
+        return int(_egg_traits_per_rarity[key])
+    return int(_egg_traits_per_rarity.get(key_string, 0))
 
 func _is_buildable(def: Dictionary) -> bool:
     if def.is_empty():
@@ -596,9 +599,6 @@ func eggs_get_hatch_secs(tier: StringName) -> float:
 
 func eggs_bump_prob(key: String) -> float:
     return float(_egg_bump_probs.get(key, 0.0))
-
-func eggs_get_traits_per_rarity(tier: StringName) -> int:
-    return int(_egg_traits_per_rarity.get(tier, 0))
 
 func eggs_get_rarity_outline_color(tier: StringName) -> Color:
     var entry: Dictionary = _egg_rarity_visuals.get(tier, {})

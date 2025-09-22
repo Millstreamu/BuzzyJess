@@ -28,7 +28,9 @@ func open_radial(cell_id: int, world_position: Vector2) -> void:
     if build_menu:
         var state: int = GameState.get_hive_cell_state(cell_id, BUILD_STATE_LOCKED)
         var include_base_cost: bool = state == BUILD_STATE_AVAILABLE
-        var base_cost: Dictionary = include_base_cost ? _get_base_build_cost() : {}
+        var base_cost: Dictionary = {}
+        if include_base_cost:
+            base_cost = _get_base_build_cost()
         build_menu.set_base_cost(base_cost)
         build_menu.open_for_cell(cell_id, world_position)
 
