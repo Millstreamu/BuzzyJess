@@ -307,17 +307,17 @@ func load_traits() -> void:
             var id_string: String = String(id_value)
             if id_string.is_empty():
                 continue
-            var trait: Dictionary = {}
-            trait["id"] = StringName(id_string)
-            trait["name"] = String(entry.get("name", id_string))
-            trait["desc"] = String(entry.get("desc", ""))
+            var trait_entry: Dictionary = {}
+            trait_entry["id"] = StringName(id_string)
+            trait_entry["name"] = String(entry.get("name", id_string))
+            trait_entry["desc"] = String(entry.get("desc", ""))
             var effects: Dictionary = {}
             var effects_value: Variant = entry.get("effects", {})
             if typeof(effects_value) == TYPE_DICTIONARY:
                 for key in effects_value.keys():
                     effects[StringName(String(key))] = effects_value.get(key)
-            trait["effects"] = effects
-            traits_list.append(trait)
+            trait_entry["effects"] = effects
+            traits_list.append(trait_entry)
     var rarity_pools: Dictionary = {}
     var pools_value: Variant = parsed.get("rarity_pools", {})
     if typeof(pools_value) == TYPE_DICTIONARY:
