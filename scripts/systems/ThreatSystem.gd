@@ -1,5 +1,4 @@
 extends Node
-class_name ThreatSystem
 
 var _rng := RandomNumberGenerator.new()
 var _tick_timer: Timer
