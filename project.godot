@@ -17,6 +17,9 @@ ProductionSystem="*res://scripts/systems/ProductionSystem.gd"
 DefenseSystem="*res://scripts/systems/DefenseSystem.gd"
 ThreatSystem="*res://scripts/systems/ThreatSystem.gd"
 HarvestController="*res://scripts/autoload/HarvestController.gd"
+InventorySystem="*res://scripts/systems/InventorySystem.gd"
+TraitsSystem="*res://scripts/systems/TraitsSystem.gd"
+EggSystem="*res://scripts/systems/EggSystem.gd"
 
 [input]
 ui_right={"deadzone":0.5,"events":[{"type":"InputEventKey","physical_keycode":4194321}]}

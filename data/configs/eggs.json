@@ -1,0 +1,15 @@
+{
+  "queen_feed": {
+    "Common": { "cost": { "Honey": 10 } },
+    "Unique": { "cost": { "Honey": 20 } },
+    "Rare":   { "cost": { "Honey": 30 } }
+  },
+  "hatch_seconds": { "Common": 10, "Unique": 15, "Rare": 20 },
+  "rarity_bump":   { "CommonToUnique": 0.05, "UniqueToRare": 0.10 },
+  "rarity_visuals": {
+    "Common": { "outline": "#43A047" },
+    "Unique": { "outline": "#1E88E5" },
+    "Rare":   { "outline": "#8E24AA" }
+  },
+  "traits_per_rarity": { "Common": 0, "Unique": 1, "Rare": 2 }
+}

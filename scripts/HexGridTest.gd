@@ -6,7 +6,6 @@ const FloatingTextScene := preload("res://scenes/FX/FloatingText.tscn")
 const HAMMER_TEXTURE := preload("res://art/icons/hammer.svg")
 const QueenSelectScene := preload("res://scenes/UI/QueenSelect.tscn")
 const SEAT_TYPE := StringName("QueenSeat")
-const EGG_RESOURCE := StringName("Egg")
 
 @export var hex_size: float = 48.0
 @export var hex_color: Color = Color(1.0, 0.9, 0.1)
@@ -47,7 +46,7 @@ var _cell_type_colors := {
     "CandleHall": Color(0.6, 0.5, 0.9),
     "GuardPost": Color(0.4, 0.6, 0.8),
     "GatheringHut": Color(0.5, 0.8, 0.5),
-    "Damage": Color(0.25, 0.23, 0.28)
+    "Damaged": Color(0.25, 0.23, 0.28)
 }
 
 var _cell_states: Dictionary = {}
@@ -61,6 +60,7 @@ var _hover_cell_id: int = -1
 @onready var _resources_panel: ResourcesPanel = $CanvasLayer/ResourcesPanel
 @onready var _build_manager: BuildManager = $BuildManager
 @onready var _queen_controller: QueenController = $QueenController
+@onready var _brood_controller: BroodController = $BroodController
 
 func _ready() -> void:
     _generate_grid()
@@ -83,6 +83,8 @@ func _ready() -> void:
         Events.harvest_tick.connect(_on_harvest_tick)
     if not Events.queen_fed.is_connected(_on_queen_fed):
         Events.queen_fed.connect(_on_queen_fed)
+    if not Events.bee_hatched.is_connected(_on_bee_hatched):
+        Events.bee_hatched.connect(_on_bee_hatched)
     queue_redraw()
     var viewport := get_viewport()
     if viewport:
@@ -230,7 +232,7 @@ func _unhandled_input(event: InputEvent) -> void:
             viewport.set_input_as_handled()
         return
 
-    if (_build_menu and _build_menu.is_open()) or (_queen_controller and _queen_controller.is_menu_open()) or (_assign_controller and _assign_controller.is_panel_open()) or (_resources_panel and _resources_panel.is_open()) or (_gathering_controller and _gathering_controller.is_panel_open()):
+    if (_build_menu and _build_menu.is_open()) or (_queen_controller and _queen_controller.is_menu_open()) or (_brood_controller and _brood_controller.is_panel_open()) or (_assign_controller and _assign_controller.is_panel_open()) or (_resources_panel and _resources_panel.is_open()) or (_gathering_controller and _gathering_controller.is_panel_open()):
         return
 
     if event is InputEventMouseButton:
@@ -274,8 +276,7 @@ func _handle_cell_interaction(cell_id: int, coord: Vector2i) -> void:
             UIFx.flash_deny()
             return
         if _queen_controller:
-            var world_position: Vector2 = _get_cell_center(coord)
-            _queen_controller.open_radial(world_position)
+            _queen_controller.open_panel()
         else:
             UIFx.flash_deny()
         return
@@ -296,6 +297,12 @@ func _handle_cell_interaction(cell_id: int, coord: Vector2i) -> void:
             _build_controller.open_radial(cell_id, world_position)
     else:
         var cell_type_name: StringName = StringName(cell_type)
+        if cell_type_name == StringName("Brood"):
+            if _brood_controller:
+                _brood_controller.open_panel(cell_id)
+            else:
+                UIFx.flash_deny()
+            return
         if not ConfigDB.is_cell_assignable(cell_type_name):
             UIFx.flash_deny()
             return
@@ -425,17 +432,22 @@ func _on_harvest_tick(_id: StringName, _time_left: float, partials: Dictionary) 
         var short_name: String = ConfigDB.get_resource_short_name(resource_id)
         _spawn_floating_text(position, "+%d %s" % [amount, short_name])
 
-func _on_queen_fed(_honey_spent: int, eggs: int) -> void:
-    if eggs <= 0:
-        return
+func _on_queen_fed(tier: StringName) -> void:
     if _queen_cell_id == -1:
         return
     if not _coords_by_id.has(_queen_cell_id):
         return
     var coord: Vector2i = _coords_by_id[_queen_cell_id]
     var center: Vector2 = _get_cell_center(coord)
-    var short_name: String = ConfigDB.get_resource_short_name(EGG_RESOURCE)
-    _spawn_floating_text(center, "+%d %s" % [eggs, short_name])
+    var tier_string: String = String(tier)
+    _spawn_floating_text(center, "+1 Egg (%s)" % tier_string)
+
+func _on_bee_hatched(cell_id: int, _bee_id: int, rarity: StringName) -> void:
+    if not _coords_by_id.has(cell_id):
+        return
+    var coord: Vector2i = _coords_by_id[cell_id]
+    var center: Vector2 = _get_cell_center(coord)
+    _spawn_floating_text(center, "+1 %s Bee" % String(rarity))
 
 func _on_cell_converted(cell_id: int, _new_type: StringName) -> void:
     MergeSystem.recompute_for(cell_id)
@@ -487,8 +499,6 @@ func _ensure_queen_tile_state() -> void:
     if HiveSystem.get_cell_type(_queen_cell_id) == String(SEAT_TYPE):
         return
     HiveSystem.set_cell_type(_queen_cell_id, SEAT_TYPE)
-    if typeof(Events) == TYPE_OBJECT:
-        Events.cell_converted.emit(_queen_cell_id, SEAT_TYPE)
 
 func _spawn_floating_text(position: Vector2, text: String) -> void:
     var ft: Node = FloatingTextScene.instantiate()

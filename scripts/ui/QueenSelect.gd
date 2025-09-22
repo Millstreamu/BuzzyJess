@@ -155,8 +155,6 @@ func _place_queen_in_center() -> void:
     if center_id == -1:
         return
     HiveSystem.set_cell_type(center_id, SEAT_TYPE)
-    if typeof(Events) == TYPE_OBJECT:
-        Events.cell_converted.emit(center_id, SEAT_TYPE)
 
 func _on_tree_exiting() -> void:
     if _frame_tween:
