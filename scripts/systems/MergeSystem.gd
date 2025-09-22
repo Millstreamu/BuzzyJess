@@ -41,7 +41,7 @@ static func same_type_neighbor_count(cell_id: int) -> int:
     return count
 
 static func neighbor_ids(cell_id: int) -> Array[int]:
-    var result: Array[int] = Array[int]()
+    var result: Array[int] = []
     if cell_id < 0:
         return result
     if HiveSystem.get_cell_entry(cell_id).is_empty():
@@ -61,7 +61,7 @@ static func _collect_affected_cells(cell_id: int) -> Array[int]:
         for neighbor_id in neighbor_ids(cell_id):
             unique[neighbor_id] = true
     var keys: Array = unique.keys()
-    var result: Array[int] = Array[int]()
+    var result: Array[int] = []
     for key in keys:
         result.append(int(key))
     return result

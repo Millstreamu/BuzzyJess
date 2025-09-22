@@ -3,7 +3,7 @@ class_name BeeModel
 
 var id: int = 0
 var rarity: StringName = &"Common"
-var traits: Array[StringName] = Array[StringName]()
+var traits: Array[StringName] = []
 
 func set_traits(values: Array) -> void:
     traits.clear()

@@ -38,7 +38,7 @@ func _on_assignment_changed(cell_id: int, _bee_id: int) -> void:
 func _on_resources_changed(_snapshot: Dictionary) -> void:
     if _paused_groups.is_empty():
         return
-    var to_resume: Array[int] = Array[int]()
+    var to_resume: Array[int] = []
     for group_id in _paused_groups.keys():
         var gid: int = int(group_id)
         if _can_group_resume(gid):
