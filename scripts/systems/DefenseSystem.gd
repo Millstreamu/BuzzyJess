@@ -1,6 +1,4 @@
 extends Node
-class_name DefenseSystem
-
 const HiveSystem := preload("res://scripts/systems/HiveSystem.gd")
 const GUARD_POST_TYPE := StringName("GuardPost")
 const AdjacencyBonus := preload("res://scripts/util/AdjacencyBonus.gd")
