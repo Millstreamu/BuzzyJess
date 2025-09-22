@@ -135,4 +135,3 @@ func _on_cell_neighbors_changed(cell_ids: Array) -> void:
         var cell_id: int = int(value)
         _refresh_post(cell_id)
 
-*** End File

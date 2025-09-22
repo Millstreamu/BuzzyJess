@@ -214,4 +214,3 @@ func _get_min_spawn_gap() -> float:
 
 func _on_game_over(_reason: String) -> void:
     _boss_in_progress = false
-*** End File
