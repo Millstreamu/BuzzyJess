@@ -209,4 +209,3 @@ func _format_time(seconds: float) -> String:
     var minutes: int = total / 60
     var rem: int = total % 60
     return "%02d:%02d" % [minutes, rem]
-*** End File
