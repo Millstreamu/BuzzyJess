@@ -9,6 +9,8 @@ var _bee_lookup: Dictionary = {}
 
 var _reserved_gatherers: int = 0
 
+var hive_cell_states: Dictionary = {}
+
 const DEFAULT_BEE_COLORS := [
     Color(0.96, 0.78, 0.28),
     Color(0.87, 0.55, 0.2),
@@ -23,6 +25,7 @@ var _next_bee_color_index: int = 0
 
 func _ready() -> void:
     _reserved_gatherers = 0
+    hive_cell_states.clear()
     _initialize_resources()
     _generate_default_bees()
     _connect_event_listeners()
@@ -198,6 +201,15 @@ func space_left_for(resource_id: StringName) -> int:
         return -1
     var qty: int = int(entry.get("qty", 0))
     return max(cap - qty, 0)
+
+func set_hive_cell_state(cell_id: int, state: int) -> void:
+    hive_cell_states[cell_id] = state
+
+func get_hive_cell_state(cell_id: int, default_value: int = 0) -> int:
+    return int(hive_cell_states.get(cell_id, default_value))
+
+func get_hive_cell_states() -> Dictionary:
+    return hive_cell_states.duplicate(true)
 
 func add_resource(resource_id: StringName, amount: int) -> void:
     if amount == 0:

@@ -1,0 +1,10 @@
+[gd_resource type="Resource" script_class="BuildConfig" load_steps=2]
+
+[ext_resource type="Script" path="res://scripts/hive/BuildConfig.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+cost_honey = 5
+cost_comb = 1
+requires_free_bee = false
+build_time_sec = 3.0

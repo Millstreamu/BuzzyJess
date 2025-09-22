@@ -2,6 +2,7 @@ extends Node2D
 
 const HiveSystem := preload("res://scripts/systems/HiveSystem.gd")
 const FloatingTextScene := preload("res://scenes/FX/FloatingText.tscn")
+const HAMMER_TEXTURE := preload("res://art/icons/hammer.svg")
 
 @export var hex_size: float = 48.0
 @export var grid_radius: int = 3
@@ -18,6 +19,17 @@ var _grid_offset: Vector2 = Vector2.ZERO
 
 const SQRT_3 := sqrt(3.0)
 
+enum BuildState { LOCKED, AVAILABLE, BUILDING, BUILT }
+
+const NEIGHBOR_DIRS: Array[Vector2i] = [
+    Vector2i(1, 0),
+    Vector2i(1, -1),
+    Vector2i(0, -1),
+    Vector2i(-1, 0),
+    Vector2i(-1, 1),
+    Vector2i(0, 1)
+]
+
 var _cell_type_colors := {
     "Empty": Color(1.0, 0.9, 0.1),
     "Brood": Color(0.8, 0.4, 0.4),
@@ -30,14 +42,25 @@ var _cell_type_colors := {
     "Damage": Color(0.25, 0.23, 0.28)
 }
 
+var _cell_states: Dictionary = {}
+var _building_progress: Dictionary = {}
+var _hover_cell_id: int = -1
+
 @onready var _build_controller: BuildController = $BuildController
 @onready var _assign_controller: AssignController = $AssignController
 @onready var _gathering_controller: GatheringController = $GatheringController
 @onready var _build_menu: BuildRadialMenu = $CanvasLayer/BuildRadialMenu
 @onready var _resources_panel: ResourcesPanel = $CanvasLayer/ResourcesPanel
+@onready var _build_manager: BuildManager = $BuildManager
 
 func _ready() -> void:
     _generate_grid()
+    _initialize_build_states()
+    if _build_manager:
+        if not _build_manager.build_started.is_connected(_on_cell_build_started):
+            _build_manager.build_started.connect(_on_cell_build_started)
+        if not _build_manager.build_finished.is_connected(_on_cell_build_finished):
+            _build_manager.build_finished.connect(_on_cell_build_finished)
     if not Events.cell_built.is_connected(_on_cell_built):
         Events.cell_built.connect(_on_cell_built)
     if not Events.assignment_changed.is_connected(_on_assignment_changed):
@@ -52,6 +75,7 @@ func _ready() -> void:
     var viewport := get_viewport()
     if viewport:
         viewport.size_changed.connect(_on_viewport_size_changed)
+    set_process(true)
 
 func _on_viewport_size_changed() -> void:
     _update_offset()
@@ -102,6 +126,70 @@ func _update_offset() -> void:
     var grid_center := Vector2(min_x, min_y) + size * 0.5
     _grid_offset = get_viewport_rect().size * 0.5 - grid_center
 
+func _initialize_build_states() -> void:
+    _cell_states.clear()
+    _building_progress.clear()
+    var saved_states: Dictionary = GameState.get_hive_cell_states()
+    if saved_states.is_empty():
+        var center_id: int = _cell_ids_by_coord.get(Vector2i.ZERO, -1)
+        if center_id != -1:
+            _cell_states[center_id] = BuildState.BUILT
+            GameState.set_hive_cell_state(center_id, BuildState.BUILT)
+        for offset in NEIGHBOR_DIRS:
+            var coord := Vector2i.ZERO + offset
+            var neighbor_id: int = _cell_ids_by_coord.get(coord, -1)
+            if neighbor_id == -1:
+                continue
+            _cell_states[neighbor_id] = BuildState.AVAILABLE
+            GameState.set_hive_cell_state(neighbor_id, BuildState.AVAILABLE)
+    else:
+        for key in saved_states.keys():
+            var cell_id := int(key)
+            var state_value := int(saved_states[key])
+            if state_value == BuildState.BUILDING:
+                state_value = BuildState.BUILT
+            _cell_states[cell_id] = state_value
+    for coord in _hex_coords:
+        var cid: int = _cell_ids_by_coord.get(coord, -1)
+        if cid == -1:
+            continue
+        if not _cell_states.has(cid):
+            _cell_states[cid] = BuildState.LOCKED
+        GameState.set_hive_cell_state(cid, int(_cell_states[cid]))
+    queue_redraw()
+
+func _process(delta: float) -> void:
+    _update_hover_cell()
+    if _build_manager == null:
+        return
+    var has_building := false
+    for cell_id in _cell_states.keys():
+        if int(_cell_states[cell_id]) != BuildState.BUILDING:
+            continue
+        var progress := _build_manager.get_progress(cell_id)
+        _building_progress[cell_id] = progress
+        has_building = true
+    if has_building:
+        queue_redraw()
+    else:
+        _building_progress.clear()
+
+func _update_hover_cell() -> void:
+    var hovered := _find_cell_at_point(get_global_mouse_position())
+    if hovered != _hover_cell_id:
+        _hover_cell_id = hovered
+        queue_redraw()
+
+func _find_cell_at_point(point: Vector2) -> int:
+    for coord in _hex_coords:
+        var cell_id: int = _cell_ids_by_coord.get(coord, -1)
+        if cell_id == -1:
+            continue
+        var polygon: PackedVector2Array = _hex_points(_get_cell_center(coord))
+        if Geometry2D.is_point_in_polygon(point, polygon):
+            return cell_id
+    return -1
+
 func _unhandled_input(event: InputEvent) -> void:
     if event.is_action_pressed("gather_panel_toggle"):
         if _gathering_controller:
@@ -121,6 +209,18 @@ func _unhandled_input(event: InputEvent) -> void:
 
     if (_build_menu and _build_menu.is_open()) or (_assign_controller and _assign_controller.is_panel_open()) or (_resources_panel and _resources_panel.is_open()) or (_gathering_controller and _gathering_controller.is_panel_open()):
         return
+
+    if event is InputEventMouseButton:
+        var mouse_event: InputEventMouseButton = event
+        if mouse_event.button_index == MOUSE_BUTTON_LEFT and mouse_event.pressed:
+            var cell_id_click := _find_cell_at_point(mouse_event.position)
+            if cell_id_click != -1:
+                var coord: Vector2i = _coords_by_id.get(cell_id_click, Vector2i.ZERO)
+                _handle_cell_interaction(cell_id_click, coord)
+                var viewport_click := get_viewport()
+                if viewport_click:
+                    viewport_click.set_input_as_handled()
+                return
 
     if event.is_action_pressed("ui_right"):
         _try_move_selection(Vector2i(1, 0))
@@ -143,10 +243,19 @@ func _handle_confirm() -> void:
     var cell_id: int = _cell_ids_by_coord.get(_selection, -1)
     if cell_id == -1:
         return
+    _handle_cell_interaction(cell_id, _selection)
+
+func _handle_cell_interaction(cell_id: int, coord: Vector2i) -> void:
+    var state: int = int(_cell_states.get(cell_id, BuildState.LOCKED))
+    if state == BuildState.AVAILABLE:
+        _attempt_start_build(cell_id)
+        return
+    if state == BuildState.BUILDING:
+        return
     var cell_type := HiveSystem.get_cell_type(cell_id)
     if cell_type == "Empty":
         if _build_controller:
-            var world_position: Vector2 = _get_cell_center(_selection)
+            var world_position: Vector2 = _get_cell_center(coord)
             _build_controller.open_radial(cell_id, world_position)
     else:
         var cell_type_name: StringName = StringName(cell_type)
@@ -155,6 +264,12 @@ func _handle_confirm() -> void:
             return
         if _assign_controller:
             _assign_controller.open_panel(cell_id)
+
+func _attempt_start_build(cell_id: int) -> void:
+    if _build_manager == null:
+        push_warning("BuildManager not available; cannot start build")
+        return
+    _build_manager.request_build(cell_id)
 
 func _draw_bee_icons(center: Vector2, icons: Array) -> void:
     if icons.is_empty():
@@ -176,13 +291,42 @@ func _get_cell_center(coord: Vector2i) -> Vector2:
 
 func _draw() -> void:
     for coord in _hex_coords:
-        var center: Vector2 = _positions.get(coord, Vector2.ZERO) + _grid_offset
+        var center: Vector2 = _get_cell_center(coord)
         var points: PackedVector2Array = _hex_points(center)
         var cell_id: int = _cell_ids_by_coord.get(coord, -1)
         var cell_type := HiveSystem.get_cell_type(cell_id) if cell_id != -1 else "Empty"
         var fill_color: Color = _cell_type_colors.get(cell_type, hex_color)
+        var state: int = BuildState.LOCKED
+        if cell_id != -1:
+            state = int(_cell_states.get(cell_id, BuildState.LOCKED))
+        match state:
+            BuildState.LOCKED:
+                fill_color = fill_color.darkened(0.45)
+                fill_color.a = 0.65
+            BuildState.AVAILABLE:
+                fill_color.a = 0.5
+            BuildState.BUILDING:
+                fill_color = fill_color.lerp(Color.WHITE, 0.1)
+                fill_color.a = max(fill_color.a, 0.85)
+            BuildState.BUILT:
+                fill_color.a = 1.0
+        if cell_id == _hover_cell_id and state != BuildState.LOCKED:
+            fill_color = fill_color.lerp(Color.WHITE, 0.2)
+            if state == BuildState.AVAILABLE:
+                fill_color.a = 0.5
         draw_colored_polygon(points, fill_color)
         if cell_id != -1:
+            if state == BuildState.AVAILABLE and HAMMER_TEXTURE:
+                var hammer_scale := hex_size * 1.1
+                var rect := Rect2(center - Vector2(hammer_scale, hammer_scale) * 0.5, Vector2.ONE * hammer_scale)
+                draw_texture_rect(HAMMER_TEXTURE, rect, false)
+            elif state == BuildState.BUILDING:
+                var progress := clamp(float(_building_progress.get(cell_id, _build_manager.get_progress(cell_id) if _build_manager else 0.0)), 0.0, 1.0)
+                var ring_radius := hex_size * 0.95
+                var ring_width := max(hex_size * 0.12, 3.0)
+                var background_color := selection_color.darkened(0.5)
+                draw_arc(center, ring_radius, -PI / 2.0, -PI / 2.0 + TAU, 64, background_color, ring_width * 0.4)
+                draw_arc(center, ring_radius, -PI / 2.0, -PI / 2.0 + TAU * progress, 64, selection_color, ring_width)
             var icons := HiveSystem.get_cell_bee_icons(cell_id)
             _draw_bee_icons(center, icons)
         if coord == _selection:
@@ -204,6 +348,22 @@ func _hex_points(center: Vector2) -> PackedVector2Array:
         var point := center + Vector2(cos(angle), sin(angle)) * hex_size
         points.append(point)
     return points
+
+func _on_cell_build_started(cell_id: int) -> void:
+    if not _cell_states.has(cell_id):
+        _cell_states[cell_id] = BuildState.BUILDING
+    _cell_states[cell_id] = BuildState.BUILDING
+    _building_progress[cell_id] = 0.0
+    GameState.set_hive_cell_state(cell_id, BuildState.BUILDING)
+    queue_redraw()
+
+func _on_cell_build_finished(cell_id: int) -> void:
+    if not _cell_states.has(cell_id):
+        _cell_states[cell_id] = BuildState.BUILT
+    _cell_states[cell_id] = BuildState.BUILT
+    _building_progress.erase(cell_id)
+    GameState.set_hive_cell_state(cell_id, BuildState.BUILT)
+    queue_redraw()
 
 func _on_cell_built(_cell_id: int, _cell_type: StringName) -> void:
     queue_redraw()
