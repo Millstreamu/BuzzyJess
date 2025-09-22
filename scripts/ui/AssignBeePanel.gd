@@ -101,16 +101,24 @@ func _make_row(bee: Dictionary, eff: int, selected: bool) -> Control:
     icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
     row.add_child(icon)
 
-    var label := Label.new()
-    label.text = bee.get("display_name", "Bee")
-    label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-    label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-    row.add_child(label)
+    var info_box := VBoxContainer.new()
+    info_box.mouse_filter = Control.MOUSE_FILTER_IGNORE
+    info_box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+    info_box.add_theme_constant_override("separation", 4)
 
-    var spacer := Control.new()
-    spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-    spacer.mouse_filter = Control.MOUSE_FILTER_IGNORE
-    row.add_child(spacer)
+    var name_label := Label.new()
+    name_label.text = String(bee.get("display_name", "Bee"))
+    name_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+    name_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+    info_box.add_child(name_label)
+
+    var trait_strip := _make_trait_strip(bee.get("traits", []))
+    if trait_strip.get_child_count() > 0:
+        info_box.add_child(trait_strip)
+    else:
+        trait_strip.queue_free()
+
+    row.add_child(info_box)
 
     row.add_child(_make_badge(eff))
 
@@ -135,6 +143,79 @@ func _make_badge(efficiency: int) -> Control:
     label.text = _format_efficiency(efficiency)
     badge.add_child(label)
     return badge
+
+func _make_trait_strip(traits_value: Variant) -> HBoxContainer:
+    var strip := HBoxContainer.new()
+    strip.mouse_filter = Control.MOUSE_FILTER_IGNORE
+    strip.add_theme_constant_override("separation", 6)
+    var traits: Array[StringName] = _normalize_traits(traits_value)
+    for trait_id in traits:
+        var badge := _make_trait_badge(short_code_for(trait_id), trait_display_name(trait_id))
+        strip.add_child(badge)
+    return strip
+
+func _make_trait_badge(code: String, tooltip: String) -> PanelContainer:
+    var badge := PanelContainer.new()
+    badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
+    badge.tooltip_text = tooltip
+    var style := StyleBoxFlat.new()
+    style.bg_color = Color(0.32, 0.3, 0.42, 0.95)
+    style.set_corner_radius_all(10)
+    style.set_border_width_all(1)
+    style.border_color = Color(1, 1, 1, 0.4)
+    badge.add_theme_stylebox_override("panel", style)
+
+    var label := Label.new()
+    label.text = code
+    label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+    label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+    label.custom_minimum_size = Vector2(40, 20)
+    label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+    badge.add_child(label)
+    return badge
+
+func short_code_for(trait: StringName) -> String:
+    match String(trait):
+        "Construction":
+            return "CON"
+        "Gather":
+            return "GAT"
+        _:
+            return "TRT"
+
+func trait_display_name(trait: StringName) -> String:
+    match String(trait):
+        "Construction":
+            return "Construction"
+        "Gather":
+            return "Gather"
+        _:
+            return String(trait)
+
+func _normalize_traits(value: Variant) -> Array[StringName]:
+    var traits: Array[StringName] = []
+    if typeof(value) != TYPE_ARRAY:
+        return traits
+    var seen: Dictionary = {}
+    for entry in value:
+        var trait_id: StringName = _as_string_name(entry)
+        if trait_id == StringName(""):
+            continue
+        if seen.has(trait_id):
+            continue
+        seen[trait_id] = true
+        traits.append(trait_id)
+    return traits
+
+func _as_string_name(value: Variant) -> StringName:
+    if typeof(value) == TYPE_STRING_NAME:
+        return value
+    if typeof(value) == TYPE_STRING:
+        var s := String(value)
+        if s.is_empty():
+            return StringName("")
+        return StringName(s)
+    return StringName("")
 
 func _format_efficiency(efficiency: int) -> String:
     if efficiency > 0:

@@ -1,0 +1,36 @@
+{
+  "traits": [
+    {
+      "id": "Construction",
+      "name": "Construction",
+      "desc": "Build/repair tasks are faster (−3s).",
+      "effects": {
+        "build_time_bonus_seconds": 3,
+        "repair_time_bonus_seconds": 3
+      }
+    },
+    {
+      "id": "Gather",
+      "name": "Gather",
+      "desc": "This bee gathers +10% during harvest trickle.",
+      "effects": {
+        "harvest_trickle_multiplier": 1.1
+      }
+    }
+  ],
+  "rarity_pools": {
+    "Common":   [{ "id": "Construction", "weight": 1 }, { "id": "Gather", "weight": 1 }],
+    "Unique":   [{ "id": "Construction", "weight": 1 }, { "id": "Gather", "weight": 1 }],
+    "Rare":     [{ "id": "Construction", "weight": 1 }, { "id": "Gather", "weight": 1 }]
+  },
+  "traits_per_rarity": {
+    "Common": 0,
+    "Unique": 1,
+    "Rare": 2
+  },
+  "defaults": {
+    "gather_multiplier": 1.1,
+    "build_bonus_seconds": 3,
+    "repair_bonus_seconds": 3
+  }
+}

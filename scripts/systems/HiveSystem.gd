@@ -208,15 +208,38 @@ static func _on_hatch_timer_timeout(cell_id: int) -> void:
     if expected_type != StringName("") and current_type_name != expected_type:
         return
     if current_type_name == BROOD_TYPE:
-        var bee_id: int = GameState.add_bee()
+        var entry: Dictionary = _cells.get(cell_id, {})
+        var tier_value: Variant = entry.get("egg_rarity", entry.get("rarity", "Common"))
+        var tier_string: String = "Common"
+        if typeof(tier_value) == TYPE_STRING_NAME:
+            tier_string = String(tier_value)
+        elif typeof(tier_value) == TYPE_STRING:
+            tier_string = String(tier_value)
+        if tier_string.is_empty():
+            tier_string = "Common"
+        var final_tier: StringName = StringName(tier_string)
+        var trait_count: int = ConfigDB.eggs_get_traits_per_rarity(final_tier)
+        var traits: Array[StringName] = TraitsSystem.generate_for_rarity(final_tier, trait_count)
+        var bee_id: int = GameState.add_bee({
+            "rarity": final_tier,
+            "traits": traits
+        })
         if typeof(Events) == TYPE_OBJECT:
             Events.bee_created.emit(bee_id)
+            if not traits.is_empty():
+                Events.bee_traits_assigned.emit(bee_id, traits.duplicate(true))
         var extra: int = int(GameState.modifiers.get("brood_extra_bees", 0))
         if extra > 0:
             for _i in range(extra):
-                var extra_id: int = GameState.add_bee()
+                var extra_traits: Array[StringName] = TraitsSystem.generate_for_rarity(final_tier, trait_count)
+                var extra_id: int = GameState.add_bee({
+                    "rarity": final_tier,
+                    "traits": extra_traits
+                })
                 if typeof(Events) == TYPE_OBJECT:
                     Events.bee_created.emit(extra_id)
+                    if not extra_traits.is_empty():
+                        Events.bee_traits_assigned.emit(extra_id, extra_traits.duplicate(true))
     var next_type: StringName = ConfigDB.get_cell_post_hatch_type(current_type_name)
     if String(next_type) == "":
         next_type = EMPTY_TYPE

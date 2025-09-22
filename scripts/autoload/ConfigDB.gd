@@ -31,6 +31,8 @@ var _threat_lookup: Dictionary = {}
 var _threat_weights: Dictionary = {}
 var _threat_global: Dictionary = {}
 var _boss_cfg: Dictionary = {}
+var _traits_cfg: Dictionary = {}
+var _traits_per_rarity: Dictionary = {}
 
 func _ready() -> void:
     load_cells()
@@ -39,6 +41,7 @@ func _ready() -> void:
     load_queens()
     load_threats()
     load_boss()
+    load_traits()
 
 func load_cells() -> void:
     _cell_defs.clear()
@@ -269,6 +272,58 @@ func load_boss() -> void:
         else:
             _boss_cfg[String(key)] = value
 
+func load_traits() -> void:
+    _traits_cfg.clear()
+    _traits_per_rarity.clear()
+    var path: String = "res://data/configs/traits.json"
+    if not FileAccess.file_exists(path):
+        push_warning("traits.json not found at %s" % path)
+        return
+    var file: FileAccess = FileAccess.open(path, FileAccess.READ)
+    if file == null:
+        push_warning("Failed to open %s" % path)
+        return
+    var text_json: String = file.get_as_text()
+    file.close()
+    var parsed: Variant = JSON.parse_string(text_json)
+    if typeof(parsed) != TYPE_DICTIONARY:
+        push_warning("Invalid traits.json contents")
+        return
+    var parsed_dict: Dictionary = parsed
+    _traits_cfg = parsed_dict.duplicate(true)
+    var per_rarity_value: Variant = parsed_dict.get("traits_per_rarity", {})
+    if typeof(per_rarity_value) == TYPE_DICTIONARY:
+        for key in per_rarity_value.keys():
+            var count_value: Variant = per_rarity_value.get(key, 0)
+            if typeof(count_value) == TYPE_FLOAT or typeof(count_value) == TYPE_INT:
+                _traits_per_rarity[String(key)] = int(round(float(count_value)))
+    var pools_value: Variant = parsed_dict.get("rarity_pools", {})
+    var processed_pools: Dictionary = {}
+    if typeof(pools_value) == TYPE_DICTIONARY:
+        for key in pools_value.keys():
+            var pool_array: Array = []
+            var source_value: Variant = pools_value.get(key, [])
+            if typeof(source_value) == TYPE_ARRAY:
+                for entry in source_value:
+                    if typeof(entry) != TYPE_DICTIONARY:
+                        continue
+                    var id_value: Variant = entry.get("id", "")
+                    var id_string: String = String(id_value)
+                    if id_string.is_empty():
+                        continue
+                    var weight_value: Variant = entry.get("weight", 0)
+                    if typeof(weight_value) != TYPE_FLOAT and typeof(weight_value) != TYPE_INT:
+                        continue
+                    var weight: float = max(float(weight_value), 0.0)
+                    if weight <= 0.0:
+                        continue
+                    pool_array.append({
+                        "id": StringName(id_string),
+                        "weight": weight
+                    })
+            processed_pools[String(key)] = pool_array
+    _traits_cfg["rarity_pools"] = processed_pools
+
 func get_buildable_cell_types() -> Array[StringName]:
     return _buildable_ids.duplicate()
 
@@ -420,6 +475,15 @@ func get_threat_display_name(id: StringName) -> String:
 
 func get_boss_cfg() -> Dictionary:
     return _boss_cfg.duplicate(true)
+
+func get_traits_cfg() -> Dictionary:
+    return _traits_cfg.duplicate(true)
+
+func eggs_get_traits_per_rarity(rarity: StringName) -> int:
+    var key: String = String(rarity)
+    if key.is_empty():
+        key = "Common"
+    return int(_traits_per_rarity.get(key, 0))
 
 func _is_buildable(def: Dictionary) -> bool:
     if def.is_empty():
