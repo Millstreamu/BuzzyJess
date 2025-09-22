@@ -1,4 +1,4 @@
-[gd_scene load_steps=9 format=3]
+[gd_scene load_steps=11 format=3]
 
 [ext_resource type="Script" path="res://scripts/HexGridTest.gd" id="1"]
 [ext_resource type="Script" path="res://scripts/controllers/BuildController.gd" id="2"]
@@ -8,6 +8,8 @@
 [ext_resource type="PackedScene" path="res://scenes/UI/ResourcesPanel.tscn" id="6"]
 [ext_resource type="Script" path="res://scripts/controllers/GatheringController.gd" id="7"]
 [ext_resource type="PackedScene" path="res://scenes/UI/HarvestPanel.tscn" id="8"]
+[ext_resource type="Script" path="res://scripts/controllers/BuildManager.gd" id="9"]
+[ext_resource type="Resource" path="res://resources/build/BuildConfig.tres" id="10"]
 
 [node name="TestHex" type="Node2D"]
 script = ExtResource("1")
@@ -23,6 +25,10 @@ panel_path = NodePath("../CanvasLayer/AssignBeePanel")
 [node name="GatheringController" type="Node" parent="."]
 script = ExtResource("7")
 panel_path = NodePath("../CanvasLayer/HarvestPanel")
+
+[node name="BuildManager" type="Node" parent="."]
+script = ExtResource("9")
+build_config = ExtResource("10")
 
 [node name="CanvasLayer" type="CanvasLayer" parent="."]
 layer = 1
