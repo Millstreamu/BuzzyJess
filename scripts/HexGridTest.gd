@@ -189,7 +189,7 @@ func _process(delta: float) -> void:
     for cell_id in _cell_states.keys():
         if int(_cell_states[cell_id]) != BuildState.BUILDING:
             continue
-        var progress := _build_manager.get_progress(cell_id)
+        var progress: float = _build_manager.get_progress(cell_id)
         _building_progress[cell_id] = progress
         has_building = true
     if has_building:
