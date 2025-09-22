@@ -63,22 +63,40 @@ func request_build(cell_id: int, cell_type: StringName) -> bool:
         return true
     if is_brood:
         var build_seconds: float = ConfigDB.get_cell_build_seconds(cell_type)
-        var bonus: float = ConfigDB.get_cell_trait_construction_bonus(cell_type)
+        var reservation: Dictionary = GameState.reserve_bee_for_task()
+        if reservation.is_empty():
+            for key in total_cost.keys():
+                var resource_id: StringName = key if typeof(key) == TYPE_STRING_NAME else StringName(String(key))
+                GameState.adjust_resource_quantity(resource_id, int(total_cost[key]))
+            _notify_insufficient_bees(cell_id)
+            return false
+        var bee_id: int = int(reservation.get("id", -1))
+        if bee_id <= 0:
+            GameState.release_bee_from_task(bee_id)
+            for key in total_cost.keys():
+                var resource_id_fail: StringName = key if typeof(key) == TYPE_STRING_NAME else StringName(String(key))
+                GameState.adjust_resource_quantity(resource_id_fail, int(total_cost[key]))
+            _notify_insufficient_bees(cell_id)
+            return false
         var on_done := func() -> void:
             _active_builds.erase(cell_id)
             _complete_build(cell_id, cell_type)
             emit_signal("build_finished", cell_id)
             Events.cell_built.emit(cell_id, cell_type)
             Events.brood_built.emit(cell_id)
-        var success_task: bool = WorkerTasks.run(cell_id, build_seconds, StringName(""), true, WorkerTasks.DEFAULT_BONUS_TRAIT, bonus, on_done)
+        var success_task: bool = WorkerTasks.run_build_or_repair(cell_id, build_seconds, bee_id, false, on_done)
         if not success_task:
+            GameState.release_bee_from_task(bee_id)
             for key in total_cost.keys():
-                var resource_id: StringName = key if typeof(key) == TYPE_STRING_NAME else StringName(String(key))
-                GameState.adjust_resource_quantity(resource_id, int(total_cost[key]))
+                var resource_id_retry: StringName = key if typeof(key) == TYPE_STRING_NAME else StringName(String(key))
+                GameState.adjust_resource_quantity(resource_id_retry, int(total_cost[key]))
             _notify_insufficient_bees(cell_id)
             return false
         var timer: SceneTreeTimer = WorkerTasks.get_task_timer(cell_id)
-        _active_builds[cell_id] = {"timer": timer, "cell_type": cell_type, "duration": build_seconds}
+        var tracked_duration: float = build_seconds
+        if timer != null:
+            tracked_duration = max(timer.wait_time, 0.0)
+        _active_builds[cell_id] = {"timer": timer, "cell_type": cell_type, "duration": tracked_duration}
         emit_signal("build_started", cell_id)
         return true
     var duration: float = max(build_config.build_time_sec, 0.0)
