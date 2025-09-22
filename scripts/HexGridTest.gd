@@ -419,7 +419,7 @@ func _show_queen_selection() -> void:
     var overlay: Node = QueenSelectScene.instantiate()
     if overlay == null:
         return
-    overlay.pause_mode = Node.PAUSE_MODE_PROCESS
+    overlay.process_mode = Node.PROCESS_MODE_WHEN_PAUSED
     if overlay.has_signal("queen_confirmed"):
         overlay.connect("queen_confirmed", Callable(self, "_on_queen_confirmed"))
     if overlay.has_signal("selection_closed"):
