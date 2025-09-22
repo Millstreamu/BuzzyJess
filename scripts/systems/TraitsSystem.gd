@@ -177,10 +177,10 @@ func _get_rarity_pool(rarity: StringName) -> Array:
     return fallback
 
 func _trait_effect_float(trait_id: StringName, key: StringName, fallback: float) -> float:
-    var trait: Dictionary = _traits_by_id.get(trait_id, {})
-    if trait.is_empty():
+    var trait_data: Dictionary = _traits_by_id.get(trait_id, {})
+    if trait_data.is_empty():
         return fallback
-    var effects_value: Variant = trait.get("effects", {})
+    var effects_value: Variant = trait_data.get("effects", {})
     if typeof(effects_value) != TYPE_DICTIONARY:
         return fallback
     var value: Variant = effects_value.get(key, null)
