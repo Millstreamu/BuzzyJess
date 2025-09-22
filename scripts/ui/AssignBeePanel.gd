@@ -175,22 +175,20 @@ func _make_trait_badge(code: String, tooltip: String) -> PanelContainer:
     return badge
 
 func short_code_for(trait: StringName) -> String:
-    match String(trait):
-        "Construction":
-            return "CON"
-        "Gather":
-            return "GAT"
-        _:
-            return "TRT"
+    var id: String = String(trait)
+    if id == "Construction":
+        return "CON"
+    elif id == "Gather":
+        return "GAT"
+    return "TRT"
 
 func trait_display_name(trait: StringName) -> String:
-    match String(trait):
-        "Construction":
-            return "Construction"
-        "Gather":
-            return "Gather"
-        _:
-            return String(trait)
+    var id: String = String(trait)
+    if id == "Construction":
+        return "Construction"
+    elif id == "Gather":
+        return "Gather"
+    return id
 
 func _normalize_traits(value: Variant) -> Array[StringName]:
     var traits: Array[StringName] = []
