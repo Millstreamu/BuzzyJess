@@ -12,7 +12,7 @@ const SEAT_TYPE := StringName("QueenSeat")
 @export var selection_color: Color = Color(1.0, 0.6, 0.0)
 @export var selection_line_width: float = 4.0
 
-var _hex_coords: Array[Vector2i] = []
+var _hex_coords: Array[Vector2i] = Array[Vector2i]()
 var _positions: Dictionary = {}
 var _cell_ids_by_coord: Dictionary = {}
 var _coords_by_id: Dictionary = {}

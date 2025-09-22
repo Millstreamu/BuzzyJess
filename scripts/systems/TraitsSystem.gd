@@ -32,7 +32,7 @@ func generate_for_rarity(rarity: StringName, count: int, rng: RandomNumberGenera
     if pool.is_empty():
         return []
     var bag: Array = pool.duplicate(true)
-    var out: Array[StringName] = []
+    var out: Array[StringName] = Array[StringName]()
     count = clamp(count, 0, bag.size())
     for i in range(count):
         if bag.is_empty():

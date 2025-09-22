@@ -20,13 +20,13 @@ const BUILDING_ASSIGNMENT_DEFAULTS := {
 }
 
 var _cell_defs: Dictionary = {}
-var _buildable_ids: Array[StringName] = []
-var _resource_defs: Array[Dictionary] = []
+var _buildable_ids: Array[StringName] = Array[StringName]()
+var _resource_defs: Array[Dictionary] = Array[Dictionary]()
 var _resource_lookup: Dictionary = {}
-var _harvest_offers: Array[Dictionary] = []
+var _harvest_offers: Array[Dictionary] = Array[Dictionary]()
 var _harvest_lookup: Dictionary = {}
-var _queen_defs: Array[Dictionary] = []
-var _threat_defs: Array[Dictionary] = []
+var _queen_defs: Array[Dictionary] = Array[Dictionary]()
+var _threat_defs: Array[Dictionary] = Array[Dictionary]()
 var _threat_lookup: Dictionary = {}
 var _threat_weights: Dictionary = {}
 var _threat_global: Dictionary = {}
@@ -37,7 +37,7 @@ var _egg_hatch_seconds: Dictionary = {}
 var _egg_bump_probs: Dictionary = {}
 var _egg_rarity_visuals: Dictionary = {}
 var _egg_traits_per_rarity: Dictionary = {}
-var _item_ids: Array[StringName] = []
+var _item_ids: Array[StringName] = Array[StringName]()
 
 func _ready() -> void:
     load_cells()
@@ -295,7 +295,7 @@ func load_traits() -> void:
     if typeof(parsed) != TYPE_DICTIONARY:
         push_warning("Invalid traits.json contents")
         return
-    var traits_list: Array[Dictionary] = []
+    var traits_list: Array[Dictionary] = Array[Dictionary]()
     var traits_value: Variant = parsed.get("traits", [])
     if typeof(traits_value) == TYPE_ARRAY:
         for entry in traits_value:
@@ -323,7 +323,7 @@ func load_traits() -> void:
     if typeof(pools_value) == TYPE_DICTIONARY:
         for key in pools_value.keys():
             var pool_id: String = String(key)
-            var pool_entries: Array[Dictionary] = []
+            var pool_entries: Array[Dictionary] = Array[Dictionary]()
             var pool_value: Variant = pools_value.get(key, [])
             if typeof(pool_value) != TYPE_ARRAY:
                 continue
@@ -581,7 +581,7 @@ func get_efficiency(building_type: StringName) -> int:
     return int(entry.get("efficiency", 0))
 
 func get_resource_ids() -> Array[StringName]:
-    var ids: Array[StringName] = []
+    var ids: Array[StringName] = Array[StringName]()
     for def in _resource_defs:
         var id: StringName = def.get("id", StringName(""))
         if id != StringName(""):
@@ -607,7 +607,7 @@ func get_resource_short_name(resource_id: StringName) -> String:
     return get_resource_display_name(resource_id)
 
 func get_harvest_offers() -> Array[Dictionary]:
-    var list: Array[Dictionary] = []
+    var list: Array[Dictionary] = Array[Dictionary]()
     for contract in _harvest_offers:
         list.append(contract.duplicate(true))
     return list
@@ -624,7 +624,7 @@ func get_harvest_outputs(offer_id: StringName) -> Dictionary:
     return {}
 
 func get_queens() -> Array[Dictionary]:
-    var list: Array[Dictionary] = []
+    var list: Array[Dictionary] = Array[Dictionary]()
     for entry in _queen_defs:
         list.append(entry.duplicate(true))
     return list
