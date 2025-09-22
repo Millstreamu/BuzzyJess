@@ -25,11 +25,13 @@ var _resource_defs: Array[Dictionary] = []
 var _resource_lookup: Dictionary = {}
 var _harvest_offers: Array[Dictionary] = []
 var _harvest_lookup: Dictionary = {}
+var _queen_defs: Array[Dictionary] = []
 
 func _ready() -> void:
     load_cells()
     load_resources()
     load_harvest_offers()
+    load_queens()
 
 func load_cells() -> void:
     _cell_defs.clear()
@@ -142,6 +144,48 @@ func load_harvest_offers() -> void:
         _harvest_offers.append(offer)
         _harvest_lookup[id_string] = offer
 
+func load_queens() -> void:
+    _queen_defs.clear()
+    var path: String = "res://data/configs/queens.json"
+    if not FileAccess.file_exists(path):
+        push_warning("queens.json not found at %s" % path)
+        return
+    var file: FileAccess = FileAccess.open(path, FileAccess.READ)
+    if file == null:
+        push_warning("Failed to open %s" % path)
+        return
+    var text_json: String = file.get_as_text()
+    file.close()
+    var parsed: Variant = JSON.parse_string(text_json)
+    if typeof(parsed) != TYPE_DICTIONARY:
+        push_warning("Invalid queens.json contents")
+        return
+    var list_value: Variant = parsed.get("queens", [])
+    if typeof(list_value) != TYPE_ARRAY:
+        push_warning("Invalid queens.json: expected 'queens' array")
+        return
+    for entry in list_value:
+        if typeof(entry) != TYPE_DICTIONARY:
+            continue
+        var id_value: Variant = entry.get("id", "")
+        if typeof(id_value) != TYPE_STRING and typeof(id_value) != TYPE_STRING_NAME:
+            continue
+        var id_string: String = String(id_value)
+        if id_string.is_empty():
+            continue
+        var queen: Dictionary = {}
+        queen["id"] = StringName(id_string)
+        queen["name"] = String(entry.get("name", id_string))
+        queen["desc"] = String(entry.get("desc", ""))
+        var effects: Dictionary = {}
+        var effects_value: Variant = entry.get("effects", {})
+        if typeof(effects_value) == TYPE_DICTIONARY:
+            for key in effects_value.keys():
+                var effect_key: String = String(key)
+                effects[effect_key] = effects_value.get(key)
+        queen["effects"] = effects
+        _queen_defs.append(queen)
+
 func get_buildable_cell_types() -> Array[StringName]:
     return _buildable_ids.duplicate()
 
@@ -253,6 +297,12 @@ func get_harvest_outputs(offer_id: StringName) -> Dictionary:
     if typeof(outputs_value) == TYPE_DICTIONARY:
         return outputs_value.duplicate(true)
     return {}
+
+func get_queens() -> Array[Dictionary]:
+    var list: Array[Dictionary] = []
+    for entry in _queen_defs:
+        list.append(entry.duplicate(true))
+    return list
 
 func _is_buildable(def: Dictionary) -> bool:
     if def.is_empty():

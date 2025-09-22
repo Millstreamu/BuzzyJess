@@ -70,6 +70,8 @@ func _connect_events() -> void:
         Events.harvest_started.connect(_on_harvest_started)
     if not Events.harvest_completed.is_connected(_on_harvest_completed):
         Events.harvest_completed.connect(_on_harvest_completed)
+    if not Events.queen_selected.is_connected(_on_queen_selected):
+        Events.queen_selected.connect(_on_queen_selected)
 
 func _on_resources_changed(_snapshot: Dictionary) -> void:
     _refresh_if_open()
@@ -81,6 +83,9 @@ func _on_harvest_started(_id: StringName, _end_time: float, _bees: int) -> void:
     _refresh_if_open()
 
 func _on_harvest_completed(_id: StringName, _success: bool) -> void:
+    _refresh_if_open()
+
+func _on_queen_selected(_queen_id: StringName, _modifiers: Dictionary) -> void:
     _refresh_if_open()
 
 func _refresh_if_open() -> void:
@@ -100,18 +105,21 @@ func _rebuild_rows() -> void:
         list_container.add_child(_make_message_label("No harvests available"))
         return
     _selected = clamp(_selected, 0, _offers.size() - 1)
+    var available_bees: int = GameState.get_free_gatherers()
     for i in _offers.size():
         var offer: Dictionary = _offers[i]
-        var has_bees: bool = GameState.get_free_gatherers() >= int(offer.get("required_bees", 0))
+        var base_required: int = int(offer.get("required_bees", 0))
+        var required_bees: int = GameState.get_harvest_bee_requirement(base_required)
+        var has_bees: bool = available_bees >= required_bees
         var cost_value: Variant = offer.get("cost", {})
         var cost: Dictionary = {}
         if typeof(cost_value) == TYPE_DICTIONARY:
             cost = cost_value
         var has_cost: bool = GameState.can_spend(cost)
-        var row: Control = _make_row(offer, i == _selected, has_bees, has_cost)
+        var row: Control = _make_row(offer, i == _selected, has_bees, has_cost, required_bees)
         list_container.add_child(row)
 
-func _make_row(offer: Dictionary, selected: bool, has_bees: bool, has_cost: bool) -> Control:
+func _make_row(offer: Dictionary, selected: bool, has_bees: bool, has_cost: bool, required_bees: int) -> Control:
     var card := PanelContainer.new()
     card.custom_minimum_size = Vector2(440, 84)
     card.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -150,7 +158,6 @@ func _make_row(offer: Dictionary, selected: bool, has_bees: bool, has_cost: bool
 
     var info_label := Label.new()
     info_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-    var required_bees: int = int(offer.get("required_bees", 0))
     var duration_seconds: int = int(round(float(offer.get("duration_seconds", 0.0))))
     info_label.text = "Gatherers: %d    Time: %ds" % [required_bees, duration_seconds]
     info_label.modulate = Color(1, 1, 1, 0.8)
@@ -286,7 +293,8 @@ func _confirm_selection() -> void:
     var cost: Dictionary = {}
     if typeof(cost_value) == TYPE_DICTIONARY:
         cost = cost_value
-    if GameState.get_free_gatherers() < int(offer.get("required_bees", 0)):
+    var required_bees: int = GameState.get_harvest_bee_requirement(int(offer.get("required_bees", 0)))
+    if GameState.get_free_gatherers() < required_bees:
         UIFx.flash_deny()
         return
     if not GameState.can_spend(cost):
@@ -294,7 +302,7 @@ func _confirm_selection() -> void:
         return
     if HarvestController.start_harvest(offer):
         var name: String = String(offer.get("name", "Harvest"))
-        var required: int = int(offer.get("required_bees", 0))
+        var required: int = required_bees
         var duration: int = int(round(float(offer.get("duration_seconds", 0.0))))
         UIFx.show_toast("Started: %s (%d gatherers, %ds)" % [name, required, duration])
         close()

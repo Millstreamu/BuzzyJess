@@ -3,6 +3,8 @@ extends Node2D
 const HiveSystem := preload("res://scripts/systems/HiveSystem.gd")
 const FloatingTextScene := preload("res://scenes/FX/FloatingText.tscn")
 const HAMMER_TEXTURE := preload("res://art/icons/hammer.svg")
+const QueenSelectScene := preload("res://scenes/UI/QueenSelect.tscn")
+const SEAT_TYPE := StringName("QueenSeat")
 
 @export var hex_size: float = 48.0
 @export var hex_color: Color = Color(1.0, 0.9, 0.1)
@@ -17,6 +19,8 @@ var _selection: Vector2i = Vector2i.ZERO
 var _grid_offset: Vector2 = Vector2.ZERO
 var _next_cell_id: int = 0
 var _queen_cell_id: int = -1
+var _queen_select_active: bool = false
+var _queen_select_prev_paused: bool = false
 
 const SQRT_3 := sqrt(3.0)
 
@@ -33,7 +37,7 @@ const NEIGHBOR_DIRS: Array[Vector2i] = [
 
 var _cell_type_colors := {
     "Empty": Color(1.0, 0.9, 0.1),
-    "Queen": Color(1.0, 0.85, 0.45),
+    "QueenSeat": Color(1.0, 0.85, 0.45),
     "Brood": Color(0.8, 0.4, 0.4),
     "Storage": Color(0.7, 0.7, 0.2),
     "HoneyVat": Color(0.9, 0.7, 0.3),
@@ -77,6 +81,7 @@ func _ready() -> void:
     if viewport:
         viewport.size_changed.connect(_on_viewport_size_changed)
     set_process(true)
+    call_deferred("_show_queen_selection")
 
 func _on_viewport_size_changed() -> void:
     _update_offset()
@@ -93,10 +98,12 @@ func _generate_grid() -> void:
     _queen_cell_id = -1
     HiveSystem.reset()
     GameState.hive_cell_states.clear()
+    GameState.reset_queen_selection()
 
     var queen_coord := Vector2i.ZERO
-    var queen_id := _ensure_cell_entry(queen_coord, "Queen")
+    var queen_id := _ensure_cell_entry(queen_coord, "Empty")
     _queen_cell_id = queen_id
+    HiveSystem.set_center_cell(queen_id)
     _set_cell_state(queen_id, BuildState.BUILT)
     _selection = queen_coord
     _add_available_neighbors(queen_id)
@@ -198,6 +205,8 @@ func _find_cell_at_point(point: Vector2) -> int:
     return -1
 
 func _unhandled_input(event: InputEvent) -> void:
+    if _queen_select_active:
+        return
     if event.is_action_pressed("gather_panel_toggle"):
         if _gathering_controller:
             _gathering_controller.toggle_panel()
@@ -399,6 +408,52 @@ func _on_harvest_tick(_id: StringName, _time_left: float, partials: Dictionary) 
 
 func _on_cell_converted(_cell_id: int, _new_type: StringName) -> void:
     queue_redraw()
+
+func _show_queen_selection() -> void:
+    if GameState.queen_id != StringName(""):
+        _queen_select_active = false
+        _ensure_queen_tile_state()
+        return
+    if QueenSelectScene == null:
+        return
+    var overlay: Node = QueenSelectScene.instantiate()
+    if overlay == null:
+        return
+    overlay.pause_mode = Node.PAUSE_MODE_PROCESS
+    if overlay.has_signal("queen_confirmed"):
+        overlay.connect("queen_confirmed", Callable(self, "_on_queen_confirmed"))
+    if overlay.has_signal("selection_closed"):
+        overlay.connect("selection_closed", Callable(self, "_on_queen_selection_closed"))
+    var parent_node: Node = $CanvasLayer if has_node("CanvasLayer") else self
+    parent_node.add_child(overlay)
+    _queen_select_active = true
+    var tree := get_tree()
+    if tree:
+        _queen_select_prev_paused = tree.paused
+        tree.paused = true
+
+func _on_queen_confirmed(_queen_id: StringName) -> void:
+    _queen_select_active = false
+    _ensure_queen_tile_state()
+    queue_redraw()
+
+func _on_queen_selection_closed() -> void:
+    var tree := get_tree()
+    if tree:
+        tree.paused = _queen_select_prev_paused
+    _queen_select_active = false
+    queue_redraw()
+
+func _ensure_queen_tile_state() -> void:
+    if _queen_cell_id == -1:
+        return
+    if GameState.queen_id == StringName(""):
+        return
+    if HiveSystem.get_cell_type(_queen_cell_id) == String(SEAT_TYPE):
+        return
+    HiveSystem.set_cell_type(_queen_cell_id, SEAT_TYPE)
+    if typeof(Events) == TYPE_OBJECT:
+        Events.cell_converted.emit(_queen_cell_id, SEAT_TYPE)
 
 func _spawn_floating_text(position: Vector2, text: String) -> void:
     var ft: Node = FloatingTextScene.instantiate()

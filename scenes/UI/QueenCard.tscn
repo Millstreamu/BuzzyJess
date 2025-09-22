@@ -1,0 +1,40 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/ui/QueenCard.gd" id="1"]
+
+[node name="QueenCard" type="PanelContainer"]
+custom_minimum_size = Vector2(280, 360)
+size_flags_horizontal = 3
+size_flags_vertical = 3
+script = ExtResource("1")
+
+[node name="Layout" type="VBoxContainer" parent="."]
+size_flags_horizontal = 3
+size_flags_vertical = 3
+alignment = 1
+theme_override_constants/separation = 18
+
+[node name="IconPanel" type="PanelContainer" parent="Layout"]
+custom_minimum_size = Vector2(160, 140)
+size_flags_horizontal = 3
+size_flags_vertical = 0
+
+[node name="IconLabel" type="Label" parent="Layout/IconPanel"]
+text = "♛"
+horizontal_alignment = 1
+vertical_alignment = 1
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="TitleLabel" type="Label" parent="Layout"]
+text = "Queen"
+horizontal_alignment = 1
+size_flags_horizontal = 3
+
+[node name="DescLabel" type="Label" parent="Layout"]
+text = "Description"
+horizontal_alignment = 1
+vertical_alignment = 1
+autowrap_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
