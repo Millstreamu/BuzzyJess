@@ -38,6 +38,9 @@ const DEFAULT_BEE_COLORS := [
     Color(0.45, 0.7, 0.74)
 ]
 
+const BEE_STATUS_IDLE := "idle"
+const BEE_STATUS_TASK := "task"
+
 var swarm_points: int = 0
 var _next_bee_id: int = 1
 var _next_bee_color_index: int = 0
@@ -113,16 +116,44 @@ func get_resources_snapshot() -> Dictionary:
 
 func get_available_bees() -> Array:
     var available: Array = []
-    var keys: Array = bees.keys()
-    keys.sort()
-    for key in keys:
-        var bee_id: int = int(key)
-        var bee: Dictionary = bees.get(bee_id, {})
-        if bee.is_empty():
-            continue
-        if int(bee.get("assigned_group", -1)) == -1:
+    for bee in bees:
+        if bee.get("assigned_group", -1) == -1 and String(bee.get("status", BEE_STATUS_IDLE)) == BEE_STATUS_IDLE:
             available.append(bee.duplicate(true))
     return available
+
+func find_available_bee(preferred_trait: StringName = StringName("")) -> int:
+    var fallback: int = -1
+    for bee in bees:
+        if bee.get("assigned_group", -1) != -1:
+            continue
+        if String(bee.get("status", BEE_STATUS_IDLE)) != BEE_STATUS_IDLE:
+            continue
+        var bee_id: int = int(bee.get("id", -1))
+        if bee_id == -1:
+            continue
+        if preferred_trait != StringName("") and TraitsSystem.bee_has_trait(bee, preferred_trait):
+            return bee_id
+        if fallback == -1:
+            fallback = bee_id
+    return fallback
+
+func reserve_bee_for_task(preferred_trait: StringName = StringName("")) -> Dictionary:
+    var bee_id: int = find_available_bee(preferred_trait)
+    if bee_id == -1:
+        return {}
+    var bee: Dictionary = _bee_lookup.get(bee_id, {})
+    if bee.is_empty():
+        return {}
+    bee["status"] = BEE_STATUS_TASK
+    _emit_bees_changed()
+    return {"id": bee_id, "bee": bee.duplicate(true)}
+
+func release_bee_from_task(bee_id: int) -> void:
+    if not _bee_lookup.has(bee_id):
+        return
+    var bee: Dictionary = _bee_lookup[bee_id]
+    bee["status"] = BEE_STATUS_IDLE
+    _emit_bees_changed()
 
 func get_bee_by_id(bee_id: int) -> Dictionary:
     var bee: Dictionary = _bee_lookup.get(bee_id, {})
@@ -159,20 +190,30 @@ func _initialize_resources() -> void:
         resources[String(id)] = entry
     _emit_resources_changed()
 
-func add_bee(props: Dictionary = {}) -> int:
+func add_bee(data: Dictionary = {}) -> int:
     var bee_id: int = _next_bee_id
     _next_bee_id += 1
-    var color: Color = _get_next_bee_color()
-    var rarity_value: Variant = props.get("rarity", StringName("Common"))
-    var rarity: StringName = _as_string_name(rarity_value)
-    if rarity == StringName(""):
-        rarity = StringName("Common")
-    var traits: Array[StringName] = _normalize_traits(props.get("traits", []))
-    var bee: Dictionary = _create_bee_entry(bee_id, color, rarity, traits)
-    bees[bee_id] = bee
+    var color_value: Variant = data.get("fill_color", _get_next_bee_color())
+    var fill_color: Color = color_value if typeof(color_value) == TYPE_COLOR else _get_next_bee_color()
+    var rarity_value: Variant = data.get("rarity", StringName("Common"))
+    var rarity: StringName = rarity_value if typeof(rarity_value) == TYPE_STRING_NAME else StringName(String(rarity_value))
+    var outline_value: Variant = data.get("outline_color", ConfigDB.eggs_get_rarity_outline_color(rarity))
+    var outline_color: Color = outline_value if typeof(outline_value) == TYPE_COLOR else ConfigDB.eggs_get_rarity_outline_color(rarity)
+    var traits: Array = []
+    var traits_value: Variant = data.get("traits", [])
+    if typeof(traits_value) == TYPE_ARRAY:
+        for entry in traits_value:
+            if typeof(entry) == TYPE_DICTIONARY:
+                traits.append(entry.duplicate(true))
+    var display_name_value: Variant = data.get("display_name", "Bee %d" % bee_id)
+    var display_name: String = String(display_name_value)
+    var bee: Dictionary = _create_bee_entry(bee_id, fill_color, outline_color, rarity, traits, display_name)
+    bees.append(bee)
     _bee_lookup[bee_id] = bee
     inc_swarm(1)
     _emit_bees_changed()
+    if typeof(Events) == TYPE_OBJECT:
+        Events.bee_created.emit(bee_id)
     return bee_id
 
 func get_bees_snapshot() -> Array:
@@ -488,33 +529,46 @@ func _generate_default_bees() -> void:
     for color in DEFAULT_BEE_COLORS:
         var bee_id: int = _next_bee_id
         _next_bee_id += 1
-        var bee: Dictionary = _create_bee_entry(bee_id, color, StringName("Common"), [])
-        bees[bee_id] = bee
+        var outline: Color = ConfigDB.eggs_get_rarity_outline_color(StringName("Common"))
+        var bee: Dictionary = _create_bee_entry(bee_id, color, outline, StringName("Common"), [], "Bee %d" % bee_id)
+        bees.append(bee)
         _bee_lookup[bee_id] = bee
         _next_bee_color_index += 1
     _emit_bees_changed()
 
-func _make_bee_icon(color: Color) -> Texture2D:
+func _make_bee_icon(fill_color: Color, outline_color: Color) -> Texture2D:
     var size := 36
     var image := Image.create(size, size, false, Image.FORMAT_RGBA8)
     image.fill(Color(0, 0, 0, 0))
     var center := Vector2(size, size) * 0.5
     var radius := float(size) * 0.4
+    var outline_width: float = max(1.0, radius * 0.2)
     for y in size:
         for x in size:
             var pos := Vector2(float(x) + 0.5, float(y) + 0.5)
-            if pos.distance_to(center) <= radius:
-                image.set_pixel(x, y, color)
+            var dist := pos.distance_to(center)
+            if dist <= radius:
+                var pixel_color: Color = fill_color
+                if outline_color.a > 0.0 and dist >= radius - outline_width:
+                    pixel_color = outline_color
+                image.set_pixel(x, y, pixel_color)
     return ImageTexture.create_from_image(image)
 
-func _create_bee_entry(bee_id: int, color: Color, rarity: StringName, traits: Array[StringName]) -> Dictionary:
+func _create_bee_entry(bee_id: int, fill_color: Color, outline_color: Color, rarity: StringName, traits: Array, display_name: String) -> Dictionary:
+    var trait_list: Array = []
+    for entry in traits:
+        if typeof(entry) == TYPE_DICTIONARY:
+            trait_list.append(entry.duplicate(true))
     return {
         "id": bee_id,
-        "display_name": "Bee %d" % bee_id,
-        "icon": _make_bee_icon(color),
+        "display_name": display_name,
+        "icon": _make_bee_icon(fill_color, outline_color),
         "assigned_group": -1,
+        "status": BEE_STATUS_IDLE,
         "rarity": rarity,
-        "traits": traits.duplicate(true)
+        "traits": trait_list,
+        "outline_color": outline_color,
+        "fill_color": fill_color
     }
 
 func _get_next_bee_color() -> Color:

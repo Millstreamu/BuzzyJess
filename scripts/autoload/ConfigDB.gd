@@ -31,8 +31,12 @@ var _threat_lookup: Dictionary = {}
 var _threat_weights: Dictionary = {}
 var _threat_global: Dictionary = {}
 var _boss_cfg: Dictionary = {}
-var _traits_cfg: Dictionary = {}
-var _traits_per_rarity: Dictionary = {}
+var _egg_feed_costs: Dictionary = {}
+var _egg_hatch_seconds: Dictionary = {}
+var _egg_bump_probs: Dictionary = {}
+var _egg_rarity_visuals: Dictionary = {}
+var _egg_traits_per_rarity: Dictionary = {}
+var _item_ids: Array[StringName] = []
 
 func _ready() -> void:
     load_cells()
@@ -41,7 +45,8 @@ func _ready() -> void:
     load_queens()
     load_threats()
     load_boss()
-    load_traits()
+    load_eggs()
+    load_items()
 
 func load_cells() -> void:
     _cell_defs.clear()
@@ -272,14 +277,17 @@ func load_boss() -> void:
         else:
             _boss_cfg[String(key)] = value
 
-func load_traits() -> void:
-    _traits_cfg.clear()
-    _traits_per_rarity.clear()
-    var path: String = "res://data/configs/traits.json"
+func load_eggs() -> void:
+    _egg_feed_costs.clear()
+    _egg_hatch_seconds.clear()
+    _egg_bump_probs.clear()
+    _egg_rarity_visuals.clear()
+    _egg_traits_per_rarity.clear()
+    var path: String = "res://data/configs/eggs.json"
     if not FileAccess.file_exists(path):
-        push_warning("traits.json not found at %s" % path)
+        push_warning("eggs.json not found at %s" % path)
         return
-    var file: FileAccess = FileAccess.open(path, FileAccess.READ)
+    var file := FileAccess.open(path, FileAccess.READ)
     if file == null:
         push_warning("Failed to open %s" % path)
         return
@@ -287,42 +295,74 @@ func load_traits() -> void:
     file.close()
     var parsed: Variant = JSON.parse_string(text_json)
     if typeof(parsed) != TYPE_DICTIONARY:
-        push_warning("Invalid traits.json contents")
+        push_warning("Invalid eggs.json contents")
         return
-    var parsed_dict: Dictionary = parsed
-    _traits_cfg = parsed_dict.duplicate(true)
-    var per_rarity_value: Variant = parsed_dict.get("traits_per_rarity", {})
-    if typeof(per_rarity_value) == TYPE_DICTIONARY:
-        for key in per_rarity_value.keys():
-            var count_value: Variant = per_rarity_value.get(key, 0)
+    var feed_value: Variant = parsed.get("queen_feed", {})
+    if typeof(feed_value) == TYPE_DICTIONARY:
+        for key in feed_value.keys():
+            var tier: String = String(key)
+            var entry_value: Variant = feed_value.get(key, {})
+            if typeof(entry_value) != TYPE_DICTIONARY:
+                continue
+            var cost: Dictionary = _parse_resource_amounts(entry_value.get("cost", {}))
+            _egg_feed_costs[StringName(tier)] = cost
+    var hatch_value: Variant = parsed.get("hatch_seconds", {})
+    if typeof(hatch_value) == TYPE_DICTIONARY:
+        for key in hatch_value.keys():
+            var tier_hatch: String = String(key)
+            var amount: Variant = hatch_value.get(key, 0)
+            if typeof(amount) == TYPE_FLOAT or typeof(amount) == TYPE_INT:
+                _egg_hatch_seconds[StringName(tier_hatch)] = float(amount)
+    var bump_value: Variant = parsed.get("rarity_bump", {})
+    if typeof(bump_value) == TYPE_DICTIONARY:
+        for key in bump_value.keys():
+            var bump_key: String = String(key)
+            var amount_bump: Variant = bump_value.get(key, 0.0)
+            if typeof(amount_bump) == TYPE_FLOAT or typeof(amount_bump) == TYPE_INT:
+                _egg_bump_probs[bump_key] = float(amount_bump)
+    var visual_value: Variant = parsed.get("rarity_visuals", {})
+    if typeof(visual_value) == TYPE_DICTIONARY:
+        for key in visual_value.keys():
+            var tier_visual: String = String(key)
+            var entry_visual: Variant = visual_value.get(key, {})
+            if typeof(entry_visual) != TYPE_DICTIONARY:
+                continue
+            var outline_value: Variant = entry_visual.get("outline", "")
+            if typeof(outline_value) == TYPE_STRING:
+                _egg_rarity_visuals[StringName(tier_visual)] = {
+                    "outline": String(outline_value)
+                }
+    var traits_value: Variant = parsed.get("traits_per_rarity", {})
+    if typeof(traits_value) == TYPE_DICTIONARY:
+        for key in traits_value.keys():
+            var tier_traits: String = String(key)
+            var count_value: Variant = traits_value.get(key, 0)
             if typeof(count_value) == TYPE_FLOAT or typeof(count_value) == TYPE_INT:
-                _traits_per_rarity[String(key)] = int(round(float(count_value)))
-    var pools_value: Variant = parsed_dict.get("rarity_pools", {})
-    var processed_pools: Dictionary = {}
-    if typeof(pools_value) == TYPE_DICTIONARY:
-        for key in pools_value.keys():
-            var pool_array: Array = []
-            var source_value: Variant = pools_value.get(key, [])
-            if typeof(source_value) == TYPE_ARRAY:
-                for entry in source_value:
-                    if typeof(entry) != TYPE_DICTIONARY:
-                        continue
-                    var id_value: Variant = entry.get("id", "")
-                    var id_string: String = String(id_value)
-                    if id_string.is_empty():
-                        continue
-                    var weight_value: Variant = entry.get("weight", 0)
-                    if typeof(weight_value) != TYPE_FLOAT and typeof(weight_value) != TYPE_INT:
-                        continue
-                    var weight: float = max(float(weight_value), 0.0)
-                    if weight <= 0.0:
-                        continue
-                    pool_array.append({
-                        "id": StringName(id_string),
-                        "weight": weight
-                    })
-            processed_pools[String(key)] = pool_array
-    _traits_cfg["rarity_pools"] = processed_pools
+                _egg_traits_per_rarity[StringName(tier_traits)] = int(round(float(count_value)))
+
+func load_items() -> void:
+    _item_ids.clear()
+    var path: String = "res://data/configs/items.json"
+    if not FileAccess.file_exists(path):
+        push_warning("items.json not found at %s" % path)
+        return
+    var file := FileAccess.open(path, FileAccess.READ)
+    if file == null:
+        push_warning("Failed to open %s" % path)
+        return
+    var text_json: String = file.get_as_text()
+    file.close()
+    var parsed: Variant = JSON.parse_string(text_json)
+    if typeof(parsed) != TYPE_DICTIONARY:
+        push_warning("Invalid items.json contents")
+        return
+    var list_value: Variant = parsed.get("ids", [])
+    if typeof(list_value) != TYPE_ARRAY:
+        push_warning("Invalid items.json: expected 'ids' array")
+        return
+    for entry in list_value:
+        if typeof(entry) == TYPE_STRING or typeof(entry) == TYPE_STRING_NAME:
+            _item_ids.append(StringName(String(entry)))
 
 func get_buildable_cell_types() -> Array[StringName]:
     return _buildable_ids.duplicate()
@@ -331,8 +371,29 @@ func get_cell_cost(cell_type: StringName) -> Dictionary:
     var def: Dictionary = _cell_defs.get(String(cell_type), {})
     var cost: Variant = def.get("cost", {})
     if typeof(cost) == TYPE_DICTIONARY:
-        return cost.duplicate(true)
+        var parsed: Dictionary = {}
+        for key in cost.keys():
+            var amount: Variant = cost[key]
+            if typeof(amount) == TYPE_FLOAT or typeof(amount) == TYPE_INT:
+                parsed[StringName(String(key))] = int(round(float(amount)))
+        return parsed
     return {}
+
+func get_cell_requires_bee(cell_type: StringName) -> bool:
+    var def: Dictionary = _cell_defs.get(String(cell_type), {})
+    var value: Variant = def.get("requires_bee", false)
+    if typeof(value) == TYPE_BOOL:
+        return bool(value)
+    if typeof(value) == TYPE_INT:
+        return int(value) != 0
+    return false
+
+func get_cell_build_seconds(cell_type: StringName) -> float:
+    var def: Dictionary = _cell_defs.get(String(cell_type), {})
+    var value: Variant = def.get("build_seconds", 0.0)
+    if typeof(value) == TYPE_FLOAT or typeof(value) == TYPE_INT:
+        return max(0.0, float(value))
+    return 0.0
 
 func get_cell_tick_seconds(cell_type: StringName) -> float:
     var def: Dictionary = _cell_defs.get(String(cell_type), {})
@@ -387,21 +448,45 @@ func is_cell_assignable(cell_type: StringName) -> bool:
         return assignable
     return true
 
-func get_cell_hatch_seconds(cell_type: StringName) -> float:
-    var def: Dictionary = _cell_defs.get(String(cell_type), {})
-    var value: Variant = def.get("hatch_seconds", 0.0)
-    if typeof(value) == TYPE_FLOAT or typeof(value) == TYPE_INT:
-        return float(value)
-    return 0.0
-
 func get_cell_post_hatch_type(cell_type: StringName) -> StringName:
     var def: Dictionary = _cell_defs.get(String(cell_type), {})
-    var value: Variant = def.get("post_hatch_type", "")
+    var value: Variant = def.get("post_hatch", "")
     if typeof(value) == TYPE_STRING_NAME:
         return value
     if typeof(value) == TYPE_STRING:
         return StringName(String(value))
     return StringName("")
+
+func get_cell_repair_config(cell_type: StringName) -> Dictionary:
+    var def: Dictionary = _cell_defs.get(String(cell_type), {})
+    var repair: Variant = def.get("repair", {})
+    if typeof(repair) != TYPE_DICTIONARY:
+        return {}
+    var config: Dictionary = {}
+    config["cost"] = _parse_resource_amounts(repair.get("cost", {}))
+    var requires_bee_value: Variant = repair.get("requires_bee", false)
+    if typeof(requires_bee_value) == TYPE_BOOL:
+        config["requires_bee"] = bool(requires_bee_value)
+    elif typeof(requires_bee_value) == TYPE_INT:
+        config["requires_bee"] = int(requires_bee_value) != 0
+    else:
+        config["requires_bee"] = false
+    var seconds_value: Variant = repair.get("seconds", 0.0)
+    if typeof(seconds_value) == TYPE_FLOAT or typeof(seconds_value) == TYPE_INT:
+        config["seconds"] = max(0.0, float(seconds_value))
+    else:
+        config["seconds"] = 0.0
+    var bonus_value: Variant = repair.get("trait_construction_bonus", 0.0)
+    if typeof(bonus_value) == TYPE_FLOAT or typeof(bonus_value) == TYPE_INT:
+        config["trait_construction_bonus"] = max(0.0, float(bonus_value))
+    return config
+
+func get_cell_trait_construction_bonus(cell_type: StringName) -> float:
+    var def: Dictionary = _cell_defs.get(String(cell_type), {})
+    var value: Variant = def.get("trait_construction_bonus", 0.0)
+    if typeof(value) == TYPE_FLOAT or typeof(value) == TYPE_INT:
+        return max(0.0, float(value))
+    return 0.0
 
 func get_base_assignment_capacity(cell_type: StringName) -> int:
     var entry: Dictionary = BUILDING_ASSIGNMENT_DEFAULTS.get(String(cell_type), {})
@@ -500,5 +585,27 @@ func _parse_resource_amounts(value: Variant) -> Dictionary:
     for key in value.keys():
         var amount: Variant = value.get(key, 0)
         if typeof(amount) == TYPE_FLOAT or typeof(amount) == TYPE_INT:
-            result[StringName(String(key))] = int(round(amount))
+            result[StringName(String(key))] = int(round(float(amount)))
     return result
+
+func eggs_get_feed_cost(tier: StringName) -> Dictionary:
+    return _egg_feed_costs.get(tier, {}).duplicate(true)
+
+func eggs_get_hatch_secs(tier: StringName) -> float:
+    return float(_egg_hatch_seconds.get(tier, 0.0))
+
+func eggs_bump_prob(key: String) -> float:
+    return float(_egg_bump_probs.get(key, 0.0))
+
+func eggs_get_traits_per_rarity(tier: StringName) -> int:
+    return int(_egg_traits_per_rarity.get(tier, 0))
+
+func eggs_get_rarity_outline_color(tier: StringName) -> Color:
+    var entry: Dictionary = _egg_rarity_visuals.get(tier, {})
+    var outline: Variant = entry.get("outline", "")
+    if typeof(outline) == TYPE_STRING and not String(outline).is_empty():
+        return Color(String(outline))
+    return Color.WHITE
+
+func get_item_ids() -> Array[StringName]:
+    return _item_ids.duplicate()

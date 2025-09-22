@@ -1,0 +1,33 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/ui/InventoryPanel.gd" id="1"]
+
+[node name="InventoryPanel" type="Control"]
+script = ExtResource("1")
+layout_mode = 3
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 1
+
+[node name="VBoxContainer" type="VBoxContainer" parent="."]
+layout_mode = 2
+anchor_right = 0.0
+anchor_bottom = 0.0
+offset_left = 20.0
+offset_top = 80.0
+
+[node name="Title" type="Label" parent="VBoxContainer"]
+layout_mode = 2
+text = "Inventory"
+
+[node name="CommonLabel" type="Label" parent="VBoxContainer"]
+layout_mode = 2
+text = "Common: 0"
+
+[node name="UniqueLabel" type="Label" parent="VBoxContainer"]
+layout_mode = 2
+text = "Unique: 0"
+
+[node name="RareLabel" type="Label" parent="VBoxContainer"]
+layout_mode = 2
+text = "Rare: 0"

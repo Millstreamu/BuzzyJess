@@ -1,0 +1,37 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/ui/QueenFeedPanel.gd" id="1"]
+
+[node name="QueenFeedPanel" type="Control"]
+script = ExtResource("1")
+layout_mode = 3
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 1
+
+[node name="VBoxContainer" type="VBoxContainer" parent="."]
+layout_mode = 2
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 24.0
+offset_top = 24.0
+offset_right = -24.0
+offset_bottom = -24.0
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="Title" type="Label" parent="VBoxContainer"]
+layout_mode = 2
+text = "Feed the Queen"
+
+[node name="CommonButton" type="Button" parent="VBoxContainer"]
+layout_mode = 2
+text = "Common"
+
+[node name="UniqueButton" type="Button" parent="VBoxContainer"]
+layout_mode = 2
+text = "Unique"
+
+[node name="RareButton" type="Button" parent="VBoxContainer"]
+layout_mode = 2
+text = "Rare"

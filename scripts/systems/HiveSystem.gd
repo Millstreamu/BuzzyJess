@@ -2,17 +2,17 @@ extends Node
 class_name HiveSystem
 
 static var _cells: Dictionary = {}
-static var _hatch_timers: Dictionary = {}
+static var _cell_timers: Dictionary = {}
 static var _center_cell_id: int = -1
 static var _coord_to_id: Dictionary = {}
 
 const EMPTY_TYPE := StringName("Empty")
 const BROOD_TYPE := StringName("Brood")
-const DAMAGE_TYPE := StringName("Damage")
+const DAMAGED_TYPE := StringName("Damaged")
 
 static func reset() -> void:
     _cells.clear()
-    _hatch_timers.clear()
+    _cell_timers.clear()
     _center_cell_id = -1
     _coord_to_id.clear()
 
@@ -25,6 +25,7 @@ static func register_cell(cell_id: int, data: Dictionary) -> void:
     entry["assigned"] = entry.get("assigned", [])
     entry["size"] = entry.get("size", 1)
     entry["efficiency_bonus"] = entry.get("efficiency_bonus", 0)
+    entry["metadata"] = entry.get("metadata", {})
     var coord_value: Variant = entry.get("coord", Vector2i.ZERO)
     var coord: Vector2i = Vector2i.ZERO
     if typeof(coord_value) == TYPE_VECTOR2I:
@@ -45,9 +46,10 @@ static func convert_cell_type(cell_id: int, new_type: StringName) -> void:
     if not _cells.has(cell_id):
         return
     var entry: Dictionary = _cells[cell_id]
-    _hatch_timers.erase(cell_id)
+    _clear_timers(cell_id)
     entry["type"] = String(new_type)
-    if new_type == EMPTY_TYPE or new_type == BROOD_TYPE or new_type == DAMAGE_TYPE:
+    entry["metadata"] = {}
+    if new_type == EMPTY_TYPE or new_type == BROOD_TYPE or new_type == DAMAGED_TYPE:
         _clear_assignments(entry)
         entry["group_id"] = cell_id
         entry["capacity"] = 0
@@ -59,14 +61,37 @@ static func convert_cell_type(cell_id: int, new_type: StringName) -> void:
         entry["assigned"] = []
         entry["efficiency_bonus"] = 0
     _cells[cell_id] = entry
-    if ConfigDB.get_cell_hatch_seconds(new_type) > 0.0 or ConfigDB.get_cell_post_hatch_type(new_type) != StringName(""):
-        _start_hatch_timer(cell_id, new_type)
+
+static func set_cell_metadata(cell_id: int, key: String, value: Variant) -> void:
+    if not _cells.has(cell_id):
+        return
+    var entry: Dictionary = _cells[cell_id]
+    var meta: Dictionary = {}
+    var existing: Variant = entry.get("metadata", {})
+    if typeof(existing) == TYPE_DICTIONARY:
+        meta = existing.duplicate(true)
+    if typeof(value) == TYPE_NIL:
+        meta.erase(key)
+    elif typeof(value) == TYPE_DICTIONARY and value.is_empty():
+        meta.erase(key)
+    else:
+        meta[String(key)] = value
+    entry["metadata"] = meta
+    _cells[cell_id] = entry
 
 static func get_cell_type(cell_id: int) -> String:
     return _cells.get(cell_id, {}).get("type", "Empty")
 
 static func get_cell_entry(cell_id: int) -> Dictionary:
     return _cells.get(cell_id, {}).duplicate(true)
+
+static func get_cell_metadata(cell_id: int) -> Dictionary:
+    if not _cells.has(cell_id):
+        return {}
+    var meta: Variant = _cells[cell_id].get("metadata", {})
+    if typeof(meta) == TYPE_DICTIONARY:
+        return meta.duplicate(true)
+    return {}
 
 static func get_cell_coord(cell_id: int) -> Vector2i:
     var entry: Dictionary = _cells.get(cell_id, {})
@@ -146,6 +171,31 @@ static func get_cell_bee_icons(cell_id: int) -> Array:
             icons.append(data.icon)
     return icons
 
+static func attach_timer(cell_id: int, key: String, seconds: float, callback: Callable) -> void:
+    if seconds <= 0.0:
+        if callback.is_valid():
+            callback.call()
+        return
+    var main_loop: MainLoop = Engine.get_main_loop()
+    if main_loop is SceneTree:
+        var timer: SceneTreeTimer = (main_loop as SceneTree).create_timer(max(0.0, seconds))
+        if timer:
+            if not _cell_timers.has(cell_id):
+                _cell_timers[cell_id] = {}
+            _cell_timers[cell_id][key] = timer
+            timer.timeout.connect(func() -> void:
+                if _cell_timers.has(cell_id):
+                    var dict: Dictionary = _cell_timers[cell_id]
+                    dict.erase(key)
+                    if dict.is_empty():
+                        _cell_timers.erase(cell_id)
+                if callback.is_valid():
+                    callback.call()
+            , CONNECT_ONE_SHOT)
+            return
+    if callback.is_valid():
+        callback.call()
+
 static func _get_group_entry(group_id: int) -> Dictionary:
     for cell_id in _cells.keys():
         var entry: Dictionary = _cells[cell_id]
@@ -170,82 +220,13 @@ static func _clear_assignments(entry: Dictionary) -> void:
                 GameState.unassign_bee(bee_id)
     entry["assigned"] = []
 
-static func _start_hatch_timer(cell_id: int, source_type: StringName) -> void:
-    var seconds: float = ConfigDB.get_cell_hatch_seconds(source_type)
-    if seconds <= 0.0:
-        _hatch_timers[cell_id] = {"source_type": source_type}
-        _on_hatch_timer_timeout(cell_id)
-        return
-    var main_loop: MainLoop = Engine.get_main_loop()
-    if main_loop is SceneTree:
-        var scene_tree: SceneTree = main_loop
-        var timer: SceneTreeTimer = scene_tree.create_timer(seconds)
-        if timer:
-            _hatch_timers[cell_id] = {
-                "timer": timer,
-                "source_type": source_type
-            }
-            timer.timeout.connect(func() -> void:
-                _on_hatch_timer_timeout(cell_id)
-            , CONNECT_ONE_SHOT)
-            return
-    _hatch_timers[cell_id] = {"source_type": source_type}
-    _on_hatch_timer_timeout(cell_id)
 
-static func _on_hatch_timer_timeout(cell_id: int) -> void:
-    var timer_info: Variant = _hatch_timers.get(cell_id, {})
-    _hatch_timers.erase(cell_id)
-    var expected_type: StringName = StringName("")
-    if typeof(timer_info) == TYPE_DICTIONARY:
-        var info_dict: Dictionary = timer_info
-        var stored_type: Variant = info_dict.get("source_type", StringName(""))
-        if typeof(stored_type) == TYPE_STRING_NAME:
-            expected_type = stored_type
-        elif typeof(stored_type) == TYPE_STRING:
-            expected_type = StringName(String(stored_type))
-    var current_type: String = get_cell_type(cell_id)
-    var current_type_name: StringName = StringName(current_type)
-    if expected_type != StringName("") and current_type_name != expected_type:
-        return
-    if current_type_name == BROOD_TYPE:
-        var entry: Dictionary = _cells.get(cell_id, {})
-        var tier_value: Variant = entry.get("egg_rarity", entry.get("rarity", "Common"))
-        var tier_string: String = "Common"
-        if typeof(tier_value) == TYPE_STRING_NAME:
-            tier_string = String(tier_value)
-        elif typeof(tier_value) == TYPE_STRING:
-            tier_string = String(tier_value)
-        if tier_string.is_empty():
-            tier_string = "Common"
-        var final_tier: StringName = StringName(tier_string)
-        var trait_count: int = ConfigDB.eggs_get_traits_per_rarity(final_tier)
-        var traits: Array[StringName] = TraitsSystem.generate_for_rarity(final_tier, trait_count)
-        var bee_id: int = GameState.add_bee({
-            "rarity": final_tier,
-            "traits": traits
-        })
-        if typeof(Events) == TYPE_OBJECT:
-            Events.bee_created.emit(bee_id)
-            if not traits.is_empty():
-                Events.bee_traits_assigned.emit(bee_id, traits.duplicate(true))
-        var extra: int = int(GameState.modifiers.get("brood_extra_bees", 0))
-        if extra > 0:
-            for _i in range(extra):
-                var extra_traits: Array[StringName] = TraitsSystem.generate_for_rarity(final_tier, trait_count)
-                var extra_id: int = GameState.add_bee({
-                    "rarity": final_tier,
-                    "traits": extra_traits
-                })
-                if typeof(Events) == TYPE_OBJECT:
-                    Events.bee_created.emit(extra_id)
-                    if not extra_traits.is_empty():
-                        Events.bee_traits_assigned.emit(extra_id, extra_traits.duplicate(true))
-    var next_type: StringName = ConfigDB.get_cell_post_hatch_type(current_type_name)
-    if String(next_type) == "":
-        next_type = EMPTY_TYPE
-    convert_cell_type(cell_id, next_type)
-    if typeof(Events) == TYPE_OBJECT:
-        Events.cell_converted.emit(cell_id, next_type)
+static func _clear_timers(cell_id: int) -> void:
+    if _cell_timers.has(cell_id):
+        _cell_timers.erase(cell_id)
+
 
 static func set_cell_type(cell_id: int, new_type: StringName) -> void:
     convert_cell_type(cell_id, new_type)
+    if typeof(Events) == TYPE_OBJECT:
+        Events.cell_converted.emit(cell_id, new_type)

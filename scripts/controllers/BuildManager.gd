@@ -9,6 +9,7 @@ signal build_failed(cell_id: int)
 
 const HiveSystem := preload("res://scripts/systems/HiveSystem.gd")
 const MergeSystem := preload("res://scripts/systems/MergeSystem.gd")
+const WorkerTasks := preload("res://scripts/systems/WorkerTasks.gd")
 
 const BUILD_STATE_LOCKED := 0
 const BUILD_STATE_AVAILABLE := 1
@@ -42,6 +43,11 @@ func request_build(cell_id: int, cell_type: StringName) -> bool:
     var base_cost: Dictionary = is_new_build ? build_config.get_cost_dictionary() : {}
     var specialization_cost: Dictionary = ConfigDB.get_cell_cost(cell_type)
     var total_cost: Dictionary = _combine_costs(base_cost, specialization_cost)
+    var is_brood: bool = cell_type == StringName("Brood")
+    if is_brood and ConfigDB.get_cell_requires_bee(cell_type):
+        if not WorkerTasks.has_available_bee():
+            _notify_insufficient_bees(cell_id)
+            return false
     if not total_cost.is_empty():
         if not GameState.can_spend(total_cost):
             _notify_insufficient_resources(cell_id)
@@ -52,6 +58,26 @@ func request_build(cell_id: int, cell_type: StringName) -> bool:
     if is_existing_empty:
         _complete_build(cell_id, cell_type)
         Events.cell_built.emit(cell_id, cell_type)
+        return true
+    if is_brood:
+        var build_seconds: float = ConfigDB.get_cell_build_seconds(cell_type)
+        var bonus: float = ConfigDB.get_cell_trait_construction_bonus(cell_type)
+        var on_done := func() -> void:
+            _active_builds.erase(cell_id)
+            _complete_build(cell_id, cell_type)
+            emit_signal("build_finished", cell_id)
+            Events.cell_built.emit(cell_id, cell_type)
+            Events.brood_built.emit(cell_id)
+        var success_task: bool = WorkerTasks.run(cell_id, build_seconds, StringName(""), true, WorkerTasks.DEFAULT_BONUS_TRAIT, bonus, on_done)
+        if not success_task:
+            for key in total_cost.keys():
+                var resource_id: StringName = key if typeof(key) == TYPE_STRING_NAME else StringName(String(key))
+                GameState.adjust_resource_quantity(resource_id, int(total_cost[key]))
+            _notify_insufficient_bees(cell_id)
+            return false
+        var timer: SceneTreeTimer = WorkerTasks.get_task_timer(cell_id)
+        _active_builds[cell_id] = {"timer": timer, "cell_type": cell_type, "duration": build_seconds}
+        emit_signal("build_started", cell_id)
         return true
     var duration: float = max(build_config.build_time_sec, 0.0)
     if duration <= 0.0:
@@ -91,6 +117,9 @@ func get_progress(cell_id: int) -> float:
     if timer == null:
         return 0.0
     var total: float = max(build_config.build_time_sec, 0.0001)
+    var duration_value: Variant = data.get("duration", total)
+    if typeof(duration_value) == TYPE_FLOAT or typeof(duration_value) == TYPE_INT:
+        total = max(float(duration_value), 0.0001)
     var remaining: float = max(timer.time_left, 0.0)
     return clamp(1.0 - remaining / total, 0.0, 1.0)
 
@@ -115,4 +144,9 @@ func _combine_costs(a: Dictionary, b: Dictionary) -> Dictionary:
 func _notify_insufficient_resources(cell_id: int) -> void:
     UIFx.flash_deny()
     UIFx.show_toast("Not enough resources")
+    emit_signal("build_failed", cell_id)
+
+func _notify_insufficient_bees(cell_id: int) -> void:
+    UIFx.flash_deny()
+    UIFx.show_toast("No free bees available")
     emit_signal("build_failed", cell_id)

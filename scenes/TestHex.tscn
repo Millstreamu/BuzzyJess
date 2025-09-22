@@ -1,4 +1,6 @@
+
 [gd_scene load_steps=14 format=3]
+
 
 [ext_resource type="Script" path="res://scripts/HexGridTest.gd" id="1"]
 [ext_resource type="Script" path="res://scripts/controllers/BuildController.gd" id="2"]
@@ -11,9 +13,10 @@
 [ext_resource type="Script" path="res://scripts/controllers/BuildManager.gd" id="9"]
 [ext_resource type="Resource" path="res://resources/build/BuildConfig.tres" id="10"]
 [ext_resource type="Script" path="res://scripts/controllers/QueenController.gd" id="11"]
-[ext_resource type="PackedScene" path="res://scenes/UI/QueenFeedRadialMenu.tscn" id="12"]
+[ext_resource type="PackedScene" path="res://scenes/UI/QueenFeedPanel.tscn" id="12"]
 [ext_resource type="PackedScene" path="res://scenes/UI/ThreatBanner.tscn" id="13"]
 [ext_resource type="PackedScene" path="res://scenes/UI/ThreatResolvePanel.tscn" id="14"]
+
 
 [node name="TestHex" type="Node2D"]
 script = ExtResource("1")
@@ -33,7 +36,11 @@ panel_path = NodePath("../CanvasLayer/HarvestPanel")
 
 [node name="QueenController" type="Node" parent="."]
 script = ExtResource("11")
-feed_menu_path = NodePath("../CanvasLayer/QueenFeedRadialMenu")
+panel_path = NodePath("../CanvasLayer/QueenFeedPanel")
+
+[node name="BroodController" type="Node" parent="."]
+script = ExtResource("16")
+panel_path = NodePath("../CanvasLayer/BroodInsertPanel")
 
 [node name="BuildManager" type="Node" parent="."]
 script = ExtResource("9")
@@ -54,8 +61,13 @@ visible = false
 [node name="ResourcesPanel" parent="CanvasLayer" instance=ExtResource("6")]
 visible = false
 
-[node name="QueenFeedRadialMenu" parent="CanvasLayer" instance=ExtResource("12")]
+[node name="QueenFeedPanel" parent="CanvasLayer" instance=ExtResource("12")]
 visible = false
+
+[node name="BroodInsertPanel" parent="CanvasLayer" instance=ExtResource("14")]
+visible = false
+
+[node name="InventoryPanel" parent="CanvasLayer" instance=ExtResource("15")]
 
 [node name="ThreatBanner" parent="CanvasLayer" instance=ExtResource("13")]
 
