@@ -1,5 +1,4 @@
 extends Node
-class_name TraitsSystem
 
 const TRAIT_CONSTRUCTION := StringName("Construction")
 const TRAIT_GATHER := StringName("Gather")
