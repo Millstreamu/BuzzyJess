@@ -1,6 +1,4 @@
 extends Node
-class_name InventorySystem
-
 var _items: Dictionary = {}
 var _item_ids: Array[StringName] = []
 
