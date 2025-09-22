@@ -298,6 +298,24 @@ func get_cell_production(cell_type: StringName) -> Dictionary:
             result[StringName(String(key))] = float(amount)
     return result
 
+func get_cell_flag(cell_type: StringName, key: String, default_value: bool = false) -> bool:
+    var def: Dictionary = _cell_defs.get(String(cell_type), {})
+    if def.is_empty():
+        return default_value
+    var value: Variant = def.get(key, default_value)
+    if typeof(value) == TYPE_BOOL:
+        return bool(value)
+    return default_value
+
+func get_cell_num(cell_type: StringName, key: String, default_value: float = 0.0) -> float:
+    var def: Dictionary = _cell_defs.get(String(cell_type), {})
+    if def.is_empty():
+        return default_value
+    var value: Variant = def.get(key, default_value)
+    if typeof(value) == TYPE_FLOAT or typeof(value) == TYPE_INT:
+        return float(value)
+    return default_value
+
 func has_cell_type(cell_type: StringName) -> bool:
     return _cell_defs.has(String(cell_type))
 

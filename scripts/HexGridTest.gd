@@ -1,6 +1,7 @@
 extends Node2D
 
 const HiveSystem := preload("res://scripts/systems/HiveSystem.gd")
+const MergeSystem := preload("res://scripts/systems/MergeSystem.gd")
 const FloatingTextScene := preload("res://scenes/FX/FloatingText.tscn")
 const HAMMER_TEXTURE := preload("res://art/icons/hammer.svg")
 const QueenSelectScene := preload("res://scenes/UI/QueenSelect.tscn")
@@ -76,6 +77,8 @@ func _ready() -> void:
         Events.production_tick.connect(_on_production_tick)
     if not Events.cell_converted.is_connected(_on_cell_converted):
         Events.cell_converted.connect(_on_cell_converted)
+    if Events.has_signal("cell_neighbors_changed") and not Events.cell_neighbors_changed.is_connected(_on_cell_neighbors_changed):
+        Events.cell_neighbors_changed.connect(_on_cell_neighbors_changed)
     if not Events.harvest_tick.is_connected(_on_harvest_tick):
         Events.harvest_tick.connect(_on_harvest_tick)
     if not Events.queen_fed.is_connected(_on_queen_fed):
@@ -345,6 +348,13 @@ func _draw() -> void:
             if state == BuildState.AVAILABLE:
                 fill_color.a = 0.5
         draw_colored_polygon(points, fill_color)
+        if cell_id != -1 and state == BuildState.BUILT:
+            var neighbor_count: int = MergeSystem.same_type_neighbor_count(cell_id)
+            if neighbor_count > 0:
+                var outline_color: Color = _cell_type_colors.get(cell_type, hex_color).darkened(0.3)
+                var outline_points: PackedVector2Array = _hex_points(center, hex_size * 0.82)
+                outline_points.append(outline_points[0])
+                draw_polyline(outline_points, outline_color, max(hex_size * 0.08, 3.0))
         if cell_id != -1:
             if state == BuildState.AVAILABLE and HAMMER_TEXTURE:
                 var hammer_scale := hex_size * 1.1
@@ -371,11 +381,11 @@ func _axial_to_pixel(coord: Vector2i) -> Vector2:
     var y := hex_size * (1.5 * r)
     return Vector2(x, y)
 
-func _hex_points(center: Vector2) -> PackedVector2Array:
+func _hex_points(center: Vector2, radius: float = hex_size) -> PackedVector2Array:
     var points := PackedVector2Array()
     for i in range(6):
         var angle := PI / 6.0 + PI / 3.0 * float(i)
-        var point := center + Vector2(cos(angle), sin(angle)) * hex_size
+        var point := center + Vector2(cos(angle), sin(angle)) * radius
         points.append(point)
     return points
 
@@ -429,7 +439,11 @@ func _on_queen_fed(_honey_spent: int, eggs: int) -> void:
     var short_name: String = ConfigDB.get_resource_short_name(EGG_RESOURCE)
     _spawn_floating_text(center, "+%d %s" % [eggs, short_name])
 
-func _on_cell_converted(_cell_id: int, _new_type: StringName) -> void:
+func _on_cell_converted(cell_id: int, _new_type: StringName) -> void:
+    MergeSystem.recompute_for(cell_id)
+    queue_redraw()
+
+func _on_cell_neighbors_changed(_cell_ids: Array) -> void:
     queue_redraw()
 
 func _show_queen_selection() -> void:
