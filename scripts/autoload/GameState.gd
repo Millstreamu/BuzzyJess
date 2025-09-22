@@ -116,14 +116,24 @@ func get_resources_snapshot() -> Dictionary:
 
 func get_available_bees() -> Array:
     var available: Array = []
-    for bee in bees:
+    var keys: Array = bees.keys()
+    keys.sort()
+    for key in keys:
+        var bee: Dictionary = bees.get(key, {})
+        if bee.is_empty():
+            continue
         if bee.get("assigned_group", -1) == -1 and String(bee.get("status", BEE_STATUS_IDLE)) == BEE_STATUS_IDLE:
             available.append(bee.duplicate(true))
     return available
 
 func find_available_bee(preferred_trait: StringName = StringName("")) -> int:
     var fallback: int = -1
-    for bee in bees:
+    var keys: Array = bees.keys()
+    keys.sort()
+    for key in keys:
+        var bee: Dictionary = bees.get(key, {})
+        if bee.is_empty():
+            continue
         if bee.get("assigned_group", -1) != -1:
             continue
         if String(bee.get("status", BEE_STATUS_IDLE)) != BEE_STATUS_IDLE:
@@ -208,7 +218,7 @@ func add_bee(data: Dictionary = {}) -> int:
     var display_name_value: Variant = data.get("display_name", "Bee %d" % bee_id)
     var display_name: String = String(display_name_value)
     var bee: Dictionary = _create_bee_entry(bee_id, fill_color, outline_color, rarity, traits, display_name)
-    bees.append(bee)
+    bees[bee_id] = bee
     _bee_lookup[bee_id] = bee
     inc_swarm(1)
     _emit_bees_changed()
@@ -531,7 +541,7 @@ func _generate_default_bees() -> void:
         _next_bee_id += 1
         var outline: Color = ConfigDB.eggs_get_rarity_outline_color(StringName("Common"))
         var bee: Dictionary = _create_bee_entry(bee_id, color, outline, StringName("Common"), [], "Bee %d" % bee_id)
-        bees.append(bee)
+        bees[bee_id] = bee
         _bee_lookup[bee_id] = bee
         _next_bee_color_index += 1
     _emit_bees_changed()
