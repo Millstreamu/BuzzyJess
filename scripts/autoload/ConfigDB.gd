@@ -26,12 +26,19 @@ var _resource_lookup: Dictionary = {}
 var _harvest_offers: Array[Dictionary] = []
 var _harvest_lookup: Dictionary = {}
 var _queen_defs: Array[Dictionary] = []
+var _threat_defs: Array[Dictionary] = []
+var _threat_lookup: Dictionary = {}
+var _threat_weights: Dictionary = {}
+var _threat_global: Dictionary = {}
+var _boss_cfg: Dictionary = {}
 
 func _ready() -> void:
     load_cells()
     load_resources()
     load_harvest_offers()
     load_queens()
+    load_threats()
+    load_boss()
 
 func load_cells() -> void:
     _cell_defs.clear()
@@ -186,6 +193,82 @@ func load_queens() -> void:
         queen["effects"] = effects
         _queen_defs.append(queen)
 
+func load_threats() -> void:
+    _threat_defs.clear()
+    _threat_lookup.clear()
+    _threat_weights.clear()
+    _threat_global.clear()
+    var path: String = "res://data/configs/threats.json"
+    if not FileAccess.file_exists(path):
+        push_warning("threats.json not found at %s" % path)
+        return
+    var file: FileAccess = FileAccess.open(path, FileAccess.READ)
+    if file == null:
+        push_warning("Failed to open %s" % path)
+        return
+    var text_json: String = file.get_as_text()
+    file.close()
+    var parsed: Variant = JSON.parse_string(text_json)
+    if typeof(parsed) != TYPE_DICTIONARY:
+        push_warning("Invalid threats.json contents")
+        return
+    var global_value: Variant = parsed.get("global", {})
+    if typeof(global_value) == TYPE_DICTIONARY:
+        for key in global_value.keys():
+            _threat_global[String(key)] = global_value.get(key)
+    var list_value: Variant = parsed.get("list", [])
+    if typeof(list_value) == TYPE_ARRAY:
+        for entry in list_value:
+            if typeof(entry) != TYPE_DICTIONARY:
+                continue
+            var id_value: Variant = entry.get("id", "")
+            if typeof(id_value) != TYPE_STRING and typeof(id_value) != TYPE_STRING_NAME:
+                continue
+            var id_string: String = String(id_value)
+            if id_string.is_empty():
+                continue
+            var threat: Dictionary = {}
+            threat["id"] = StringName(id_string)
+            threat["name"] = String(entry.get("name", id_string))
+            _threat_defs.append(threat)
+            _threat_lookup[id_string] = threat
+    var weights_value: Variant = parsed.get("weights", {})
+    if typeof(weights_value) == TYPE_DICTIONARY:
+        for key in weights_value.keys():
+            var weight_value: Variant = weights_value.get(key, 0)
+            if typeof(weight_value) != TYPE_FLOAT and typeof(weight_value) != TYPE_INT:
+                continue
+            _threat_weights[String(key)] = float(weight_value)
+
+func load_boss() -> void:
+    _boss_cfg.clear()
+    var path: String = "res://data/configs/boss.json"
+    if not FileAccess.file_exists(path):
+        push_warning("boss.json not found at %s" % path)
+        return
+    var file: FileAccess = FileAccess.open(path, FileAccess.READ)
+    if file == null:
+        push_warning("Failed to open %s" % path)
+        return
+    var text_json: String = file.get_as_text()
+    file.close()
+    var parsed: Variant = JSON.parse_string(text_json)
+    if typeof(parsed) != TYPE_DICTIONARY:
+        push_warning("Invalid boss.json contents")
+        return
+    for key in parsed.keys():
+        var value: Variant = parsed.get(key)
+        if typeof(value) == TYPE_ARRAY:
+            var arr: Array = []
+            for item in value:
+                if typeof(item) == TYPE_FLOAT or typeof(item) == TYPE_INT:
+                    arr.append(int(round(float(item))))
+            _boss_cfg[String(key)] = arr
+        elif typeof(value) == TYPE_FLOAT or typeof(value) == TYPE_INT:
+            _boss_cfg[String(key)] = float(value)
+        else:
+            _boss_cfg[String(key)] = value
+
 func get_buildable_cell_types() -> Array[StringName]:
     return _buildable_ids.duplicate()
 
@@ -303,6 +386,22 @@ func get_queens() -> Array[Dictionary]:
     for entry in _queen_defs:
         list.append(entry.duplicate(true))
     return list
+
+func get_threats_cfg() -> Dictionary:
+    return {
+        "global": _threat_global.duplicate(true),
+        "list": _threat_defs.duplicate(true),
+        "weights": _threat_weights.duplicate(true)
+    }
+
+func get_threat_display_name(id: StringName) -> String:
+    var entry: Dictionary = _threat_lookup.get(String(id), {})
+    if entry.is_empty():
+        return String(id)
+    return String(entry.get("name", String(id)))
+
+func get_boss_cfg() -> Dictionary:
+    return _boss_cfg.duplicate(true)
 
 func _is_buildable(def: Dictionary) -> bool:
     if def.is_empty():

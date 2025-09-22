@@ -1,0 +1,6 @@
+{
+  "hard_cap_seconds": 2700,
+  "warning_seconds": 300,
+  "phases": [1000, 1300, 1700],
+  "phase_gap_seconds": 60
+}
