@@ -141,7 +141,7 @@ func find_available_bee(preferred_trait: StringName = StringName("")) -> int:
         var bee_id: int = int(bee.get("id", -1))
         if bee_id == -1:
             continue
-        if preferred_trait != StringName("") and TraitsSystem.bee_has_trait(bee, preferred_trait):
+        if preferred_trait != StringName("") and TraitsSystem.bee_has(bee_id, preferred_trait):
             return bee_id
         if fallback == -1:
             fallback = bee_id
@@ -209,12 +209,8 @@ func add_bee(data: Dictionary = {}) -> int:
     var rarity: StringName = rarity_value if typeof(rarity_value) == TYPE_STRING_NAME else StringName(String(rarity_value))
     var outline_value: Variant = data.get("outline_color", ConfigDB.eggs_get_rarity_outline_color(rarity))
     var outline_color: Color = outline_value if typeof(outline_value) == TYPE_COLOR else ConfigDB.eggs_get_rarity_outline_color(rarity)
-    var traits: Array = []
     var traits_value: Variant = data.get("traits", [])
-    if typeof(traits_value) == TYPE_ARRAY:
-        for entry in traits_value:
-            if typeof(entry) == TYPE_DICTIONARY:
-                traits.append(entry.duplicate(true))
+    var traits: Array[StringName] = _normalize_traits(traits_value)
     var display_name_value: Variant = data.get("display_name", "Bee %d" % bee_id)
     var display_name: String = String(display_name_value)
     var bee: Dictionary = _create_bee_entry(bee_id, fill_color, outline_color, rarity, traits, display_name)
@@ -224,6 +220,8 @@ func add_bee(data: Dictionary = {}) -> int:
     _emit_bees_changed()
     if typeof(Events) == TYPE_OBJECT:
         Events.bee_created.emit(bee_id)
+        if not traits.is_empty() and Events.has_signal(StringName("bee_traits_assigned")):
+            Events.bee_traits_assigned.emit(bee_id, traits.duplicate(true))
     return bee_id
 
 func get_bees_snapshot() -> Array:
@@ -565,10 +563,7 @@ func _make_bee_icon(fill_color: Color, outline_color: Color) -> Texture2D:
     return ImageTexture.create_from_image(image)
 
 func _create_bee_entry(bee_id: int, fill_color: Color, outline_color: Color, rarity: StringName, traits: Array, display_name: String) -> Dictionary:
-    var trait_list: Array = []
-    for entry in traits:
-        if typeof(entry) == TYPE_DICTIONARY:
-            trait_list.append(entry.duplicate(true))
+    var trait_list: Array[StringName] = _normalize_traits(traits)
     return {
         "id": bee_id,
         "display_name": display_name,
@@ -576,7 +571,7 @@ func _create_bee_entry(bee_id: int, fill_color: Color, outline_color: Color, rar
         "assigned_group": -1,
         "status": BEE_STATUS_IDLE,
         "rarity": rarity,
-        "traits": trait_list,
+        "traits": trait_list.duplicate(true),
         "outline_color": outline_color,
         "fill_color": fill_color
     }
@@ -595,10 +590,16 @@ func _emit_bees_changed() -> void:
 
 func _normalize_traits(value: Variant) -> Array[StringName]:
     var traits: Array[StringName] = []
-    if typeof(value) != TYPE_ARRAY:
+    var items: Array = []
+    if typeof(value) == TYPE_ARRAY:
+        items = value
+    elif typeof(value) == TYPE_PACKED_STRING_ARRAY:
+        for entry in value:
+            items.append(entry)
+    else:
         return traits
     var seen: Dictionary = {}
-    for entry in value:
+    for entry in items:
         var trait_id: StringName = _as_string_name(entry)
         if trait_id == StringName(""):
             continue
@@ -616,4 +617,12 @@ func _as_string_name(value: Variant) -> StringName:
         if s.is_empty():
             return StringName("")
         return StringName(s)
+    if typeof(value) == TYPE_DICTIONARY:
+        var dict: Dictionary = value
+        if dict.has("id"):
+            return _as_string_name(dict.get("id"))
+        if dict.has("trait"):
+            return _as_string_name(dict.get("trait"))
+        if dict.has("trait_id"):
+            return _as_string_name(dict.get("trait_id"))
     return StringName("")

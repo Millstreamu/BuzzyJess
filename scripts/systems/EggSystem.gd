@@ -54,7 +54,7 @@ func _on_hatch(cell_id: int, original_tier: StringName) -> void:
         return
     var final_tier: StringName = _apply_bump(original_tier)
     var trait_count: int = ConfigDB.eggs_get_traits_per_rarity(final_tier)
-    var traits: Array = TraitsSystem.generate(trait_count)
+    var traits: Array[StringName] = TraitsSystem.generate_for_rarity(final_tier, trait_count)
     var outline: Color = ConfigDB.eggs_get_rarity_outline_color(final_tier)
     var bee_id: int = GameState.add_bee({
         "rarity": final_tier,
