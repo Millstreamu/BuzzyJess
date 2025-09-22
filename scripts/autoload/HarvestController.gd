@@ -23,10 +23,11 @@ func start_harvest(harvest: Dictionary) -> bool:
     var job_id: StringName = StringName(id_string)
     if _jobs.has(job_id):
         return false
-    if not GameState.reserve_gatherers(required_bees):
+    var assigned_bees: Array[int] = GameState.reserve_gatherers(required_bees)
+    if assigned_bees.size() < required_bees:
         return false
     if not GameState.spend(cost):
-        GameState.free_gatherers(required_bees)
+        GameState.free_gatherers(assigned_bees)
         return false
     var name: String = String(harvest.get("name", id_string))
     var duration: float = max(float(harvest.get("duration_seconds", 0.0)), 0.0)
@@ -51,7 +52,8 @@ func start_harvest(harvest: Dictionary) -> bool:
         "outputs": outputs_dict,
         "delivered": {},
         "acc": {},
-        "field_world_pos": harvest.get("field_world_pos", Vector2.ZERO)
+        "field_world_pos": harvest.get("field_world_pos", Vector2.ZERO),
+        "bee_ids": assigned_bees.duplicate()
     }
     for key in outputs_dict.keys():
         job.delivered[key] = 0
@@ -91,12 +93,20 @@ func _on_harvest_tick(job: Dictionary) -> void:
     var acc: Dictionary = job.get("acc", {})
     var partials: Dictionary = {}
     var final_tick: bool = time_left <= 0.0
+    var assigned_bees_value: Variant = job.get("bee_ids", [])
+    var team_bonus: float = 0.0
+    if typeof(assigned_bees_value) == TYPE_ARRAY:
+        for entry in assigned_bees_value:
+            var bee_id: int = int(entry)
+            team_bonus += TraitsSystem.harvest_multiplier(bee_id) - 1.0
+    var team_multiplier: float = max(0.0, 1.0 + team_bonus)
     for key in outputs.keys():
         var resource_id: StringName = key
         var total: int = int(outputs[key])
         if total <= 0:
             continue
-        var rate: float = float(total) / work_time
+        var base_rate: float = float(total) / work_time
+        var rate: float = base_rate * team_multiplier
         var prev_acc: float = float(acc.get(resource_id, 0.0))
         prev_acc += rate
         acc[resource_id] = prev_acc
@@ -128,8 +138,8 @@ func _finish_harvest(job: Dictionary) -> void:
     if timer:
         timer.stop()
         timer.queue_free()
-    var required: int = int(job.get("required_bees", 0))
-    GameState.free_gatherers(required)
+    var bee_ids_value: Variant = job.get("bee_ids", [])
+    GameState.free_gatherers(bee_ids_value)
     _jobs.erase(job_id)
     Events.harvest_completed.emit(job_id, true)
     UIFx.show_toast("Harvest complete: %s" % String(job.get("name", job_id)))

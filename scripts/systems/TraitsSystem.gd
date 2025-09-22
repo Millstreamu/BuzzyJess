@@ -40,3 +40,4 @@ func bee_has_trait(bee: Dictionary, trait_id: StringName) -> bool:
         if typeof(id_value) == TYPE_STRING and StringName(String(id_value)) == trait_id:
             return true
     return false
+

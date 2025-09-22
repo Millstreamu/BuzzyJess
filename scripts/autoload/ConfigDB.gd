@@ -561,6 +561,15 @@ func get_threat_display_name(id: StringName) -> String:
 func get_boss_cfg() -> Dictionary:
     return _boss_cfg.duplicate(true)
 
+func get_traits_cfg() -> Dictionary:
+    return _traits_cfg.duplicate(true)
+
+func eggs_get_traits_per_rarity(rarity: StringName) -> int:
+    var key: String = String(rarity)
+    if key.is_empty():
+        key = "Common"
+    return int(_traits_per_rarity.get(key, 0))
+
 func _is_buildable(def: Dictionary) -> bool:
     if def.is_empty():
         return true

@@ -11,10 +11,10 @@ const DEFAULT_QUEEN_MODIFIERS := {
 
 var resources: Dictionary = {}
 
-var bees: Array[Dictionary] = []
+var bees: Dictionary = {}
 var _bee_lookup: Dictionary = {}
 
-var _reserved_gatherers: int = 0
+var _reserved_gatherers: Dictionary = {}
 
 var hive_cell_states: Dictionary = {}
 
@@ -46,7 +46,7 @@ var _next_bee_id: int = 1
 var _next_bee_color_index: int = 0
 
 func _ready() -> void:
-    _reserved_gatherers = 0
+    _reserved_gatherers.clear()
     hive_cell_states.clear()
     reset_queen_selection()
     _initialize_resources()
@@ -164,6 +164,7 @@ func assign_bee_to_building(bee_id: int, group_id: int) -> Dictionary:
         return {}
     var bee: Dictionary = _bee_lookup[bee_id]
     bee["assigned_group"] = group_id
+    bees[bee_id] = bee
     return bee.duplicate(true)
 
 func get_bee_icon(bee_id: int) -> Texture2D:
@@ -175,6 +176,10 @@ func unassign_bee(bee_id: int) -> void:
         return
     var bee: Dictionary = _bee_lookup[bee_id]
     bee["assigned_group"] = -1
+    bees[bee_id] = bee
+    var removed: bool = _reserved_gatherers.erase(bee_id)
+    if removed and typeof(Events) == TYPE_OBJECT:
+        Events.gatherer_bees_available_changed.emit(get_free_gatherers())
 
 func _initialize_resources() -> void:
     resources.clear()
@@ -213,7 +218,13 @@ func add_bee(data: Dictionary = {}) -> int:
 
 func get_bees_snapshot() -> Array:
     var snapshot: Array = []
-    for bee in bees:
+    var keys: Array = bees.keys()
+    keys.sort()
+    for key in keys:
+        var bee_id: int = int(key)
+        var bee: Dictionary = bees.get(bee_id, {})
+        if bee.is_empty():
+            continue
         snapshot.append(bee.duplicate(true))
     return snapshot
 
@@ -367,24 +378,50 @@ func get_game_over_reason() -> String:
     return _game_over_reason
 
 func get_free_gatherers() -> int:
+    _prune_reserved_gatherers()
     var total_assigned: int = _get_total_assigned_gatherers()
-    return max(total_assigned - _reserved_gatherers, 0)
+    return max(total_assigned - _reserved_gatherers.size(), 0)
 
-func reserve_gatherers(amount: int) -> bool:
+func reserve_gatherers(amount: int) -> Array[int]:
+    var reserved: Array[int] = []
     if amount <= 0:
-        return true
-    if get_free_gatherers() < amount:
-        return false
-    _reserved_gatherers += amount
+        return reserved
+    _prune_reserved_gatherers()
+    var available_ids: Array[int] = _get_available_gatherer_ids()
+    if available_ids.size() < amount:
+        return reserved
+    for i in range(amount):
+        var bee_id: int = int(available_ids[i])
+        _reserved_gatherers[bee_id] = true
+        reserved.append(bee_id)
     if typeof(Events) == TYPE_OBJECT:
         Events.gatherer_bees_available_changed.emit(get_free_gatherers())
-    return true
+    return reserved
 
-func free_gatherers(amount: int) -> void:
-    if amount <= 0:
+func free_gatherers(value: Variant) -> void:
+    var ids: Array[int] = []
+    if typeof(value) == TYPE_ARRAY:
+        for entry in value:
+            ids.append(int(entry))
+    elif typeof(value) == TYPE_INT:
+        var to_release: int = max(int(value), 0)
+        if to_release <= 0:
+            return
+        var keys: Array = _reserved_gatherers.keys()
+        keys.sort()
+        for key in keys:
+            if ids.size() >= to_release:
+                break
+            ids.append(int(key))
+    else:
         return
-    _reserved_gatherers = max(0, _reserved_gatherers - amount)
-    if typeof(Events) == TYPE_OBJECT:
+    if ids.is_empty():
+        return
+    var changed: bool = false
+    for bee_id in ids:
+        if _reserved_gatherers.erase(bee_id):
+            changed = true
+    if changed and typeof(Events) == TYPE_OBJECT:
         Events.gatherer_bees_available_changed.emit(get_free_gatherers())
 
 func apply_queen_effects(effects: Dictionary) -> void:
@@ -418,6 +455,48 @@ func _get_total_assigned_gatherers() -> int:
             total += assigned.size()
     return total
 
+func _get_gatherer_bee_ids() -> Array[int]:
+    var ids: Array[int] = []
+    var cells: Dictionary = HiveSystem.get_cells()
+    for entry in cells.values():
+        if String(entry.get("type", "")) != "GatheringHut":
+            continue
+        var assigned: Variant = entry.get("assigned", [])
+        if typeof(assigned) != TYPE_ARRAY:
+            continue
+        for info in assigned:
+            if typeof(info) != TYPE_DICTIONARY:
+                continue
+            var bee_id: int = int(info.get("bee_id", -1))
+            if bee_id != -1:
+                ids.append(bee_id)
+    return ids
+
+func _get_available_gatherer_ids() -> Array[int]:
+    _prune_reserved_gatherers()
+    var ids: Array[int] = _get_gatherer_bee_ids()
+    ids.sort()
+    var available: Array[int] = []
+    for bee_id in ids:
+        if not _reserved_gatherers.has(bee_id):
+            available.append(int(bee_id))
+    return available
+
+func _prune_reserved_gatherers() -> void:
+    if _reserved_gatherers.is_empty():
+        return
+    var gatherers: Array[int] = _get_gatherer_bee_ids()
+    var gatherer_set: Dictionary = {}
+    for bee_id in gatherers:
+        gatherer_set[bee_id] = true
+    var to_remove: Array[int] = []
+    for key in _reserved_gatherers.keys():
+        var bee_id: int = int(key)
+        if not gatherer_set.has(bee_id):
+            to_remove.append(bee_id)
+    for bee_id in to_remove:
+        _reserved_gatherers.erase(bee_id)
+
 func _connect_event_listeners() -> void:
     if typeof(Events) != TYPE_OBJECT:
         return
@@ -443,6 +522,7 @@ func _on_cell_converted(_cell_id: int, _new_type: StringName) -> void:
 func _generate_default_bees() -> void:
     bees.clear()
     _bee_lookup.clear()
+    _reserved_gatherers.clear()
     swarm_points = 0
     _next_bee_id = 1
     _next_bee_color_index = 0
@@ -502,3 +582,28 @@ func _get_next_bee_color() -> Color:
 func _emit_bees_changed() -> void:
     if typeof(Events) == TYPE_OBJECT:
         Events.bees_changed.emit(get_bees_snapshot())
+
+func _normalize_traits(value: Variant) -> Array[StringName]:
+    var traits: Array[StringName] = []
+    if typeof(value) != TYPE_ARRAY:
+        return traits
+    var seen: Dictionary = {}
+    for entry in value:
+        var trait_id: StringName = _as_string_name(entry)
+        if trait_id == StringName(""):
+            continue
+        if seen.has(trait_id):
+            continue
+        seen[trait_id] = true
+        traits.append(trait_id)
+    return traits
+
+func _as_string_name(value: Variant) -> StringName:
+    if typeof(value) == TYPE_STRING_NAME:
+        return value
+    if typeof(value) == TYPE_STRING:
+        var s := String(value)
+        if s.is_empty():
+            return StringName("")
+        return StringName(s)
+    return StringName("")

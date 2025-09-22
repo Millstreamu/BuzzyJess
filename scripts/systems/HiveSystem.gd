@@ -220,9 +220,11 @@ static func _clear_assignments(entry: Dictionary) -> void:
                 GameState.unassign_bee(bee_id)
     entry["assigned"] = []
 
+
 static func _clear_timers(cell_id: int) -> void:
     if _cell_timers.has(cell_id):
         _cell_timers.erase(cell_id)
+
 
 static func set_cell_type(cell_id: int, new_type: StringName) -> void:
     convert_cell_type(cell_id, new_type)
