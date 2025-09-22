@@ -63,10 +63,10 @@ func generate(count: int, rarity: StringName = StringName("")) -> Array:
         var trait_id: StringName = _as_string_name(info.get("id", StringName("")))
         if trait_id == StringName(""):
             continue
-        var trait: Dictionary = _traits_by_id.get(trait_id, {})
-        if trait.is_empty():
+        var trait_data: Dictionary = _traits_by_id.get(trait_id, {})
+        if trait_data.is_empty():
             continue
-        selected.append(trait.duplicate(true))
+        selected.append(trait_data.duplicate(true))
         remaining -= 1
     return selected
 
@@ -172,7 +172,7 @@ func _use_fallback_traits() -> void:
         if id_string.is_empty():
             continue
         var trait_id: StringName = StringName(id_string)
-        var trait: Dictionary = {
+        var trait_data: Dictionary = {
             "id": trait_id,
             "name": String(entry.get("name", id_string)),
             "desc": String(entry.get("desc", "")),
@@ -183,8 +183,8 @@ func _use_fallback_traits() -> void:
             var effects: Dictionary = {}
             for key in effects_value.keys():
                 effects[StringName(String(key))] = effects_value[key]
-            trait["effects"] = effects
-        _traits_by_id[trait_id] = trait
+            trait_data["effects"] = effects
+        _traits_by_id[trait_id] = trait_data
     _rarity_pools.clear()
     _apply_fallback_defaults()
 
@@ -249,8 +249,8 @@ func _effects_for_entry(entry: Variant) -> Dictionary:
             return effects_value
         var trait_id: StringName = _trait_id_from_entry(entry)
         if trait_id != StringName("") and _traits_by_id.has(trait_id):
-            var trait: Dictionary = _traits_by_id.get(trait_id, {})
-            var trait_effects: Variant = trait.get("effects", {})
+            var trait_info: Dictionary = _traits_by_id.get(trait_id, {})
+            var trait_effects: Variant = trait_info.get("effects", {})
             if typeof(trait_effects) == TYPE_DICTIONARY:
                 return trait_effects
     else:
