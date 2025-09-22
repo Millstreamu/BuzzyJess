@@ -278,7 +278,11 @@ func _handle_cell_interaction(cell_id: int, coord: Vector2i) -> void:
         return
     var state: int = int(_cell_states.get(cell_id, BuildState.LOCKED))
     if state == BuildState.AVAILABLE:
-        _attempt_start_build(cell_id)
+        if _build_controller:
+            var world_position_available: Vector2 = _get_cell_center(coord)
+            _build_controller.open_radial(cell_id, world_position_available)
+        else:
+            UIFx.flash_deny()
         return
     if state == BuildState.BUILDING:
         return
@@ -294,12 +298,6 @@ func _handle_cell_interaction(cell_id: int, coord: Vector2i) -> void:
             return
         if _assign_controller:
             _assign_controller.open_panel(cell_id)
-
-func _attempt_start_build(cell_id: int) -> void:
-    if _build_manager == null:
-        push_warning("BuildManager not available; cannot start build")
-        return
-    _build_manager.request_build(cell_id)
 
 func _draw_bee_icons(center: Vector2, icons: Array) -> void:
     if icons.is_empty():

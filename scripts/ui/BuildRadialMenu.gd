@@ -1,11 +1,8 @@
 extends Control
 class_name BuildRadialMenu
 
-signal build_chosen(cell_type: StringName)
+signal build_chosen(cell_type: StringName, option_index: int)
 signal menu_closed()
-
-const HiveSystem := preload("res://scripts/systems/HiveSystem.gd")
-const MergeSystem := preload("res://scripts/systems/MergeSystem.gd")
 
 @export var radius: float = 96.0
 @export var button_size: Vector2 = Vector2(48, 48)
@@ -20,6 +17,7 @@ var buttons: Array[RadialOptionControl] = []
 var costs: Array[Dictionary] = []
 var affordable: Array[bool] = []
 var selected_index: int = -1
+var base_cost: Dictionary = {}
 
 var _is_open: bool = false
 var _open_tween: Tween = null
@@ -140,9 +138,10 @@ func _prepare_options() -> void:
     for i: int in count:
         var angle: float = start_angle + float(i) * TAU / float(count)
         angles.append(angle)
-        var cost: Dictionary = ConfigDB.get_cell_cost(options[i])
-        costs.append(cost)
-        affordable.append(GameState.can_afford(cost))
+        var specialization_cost: Dictionary = ConfigDB.get_cell_cost(options[i])
+        var total_cost: Dictionary = _combine_costs(base_cost, specialization_cost)
+        costs.append(total_cost)
+        affordable.append(GameState.can_afford(total_cost))
     selected_index = clamp(selected_index, 0, count - 1)
     if selected_index < 0:
         selected_index = 0
@@ -223,21 +222,8 @@ func _confirm() -> void:
         return
     if selected_index < 0 or selected_index >= options.size():
         return
-    if HiveSystem.get_cell_type(cell_id) != "Empty":
-        Events.build_failed.emit(cell_id)
-        close()
-        return
     var cell_type: StringName = options[selected_index]
-    var cost: Dictionary = costs[selected_index]
-    if not GameState.can_afford(cost) or not GameState.spend(cost):
-        _show_unaffordable_feedback(selected_index)
-        return
-    HiveSystem.convert_cell_type(cell_id, cell_type)
-    MergeSystem.recompute_for(cell_id)
-    Events.cell_built.emit(cell_id, cell_type)
-    Events.resources_changed.emit(GameState.get_resources_snapshot())
-    build_chosen.emit(cell_type)
-    close()
+    build_chosen.emit(cell_type, selected_index)
 
 func _show_unaffordable_feedback(idx: int) -> void:
     if idx >= 0 and idx < buttons.size():
@@ -269,6 +255,7 @@ func _on_close_finished() -> void:
     _is_open = false
     visible = false
     selection_ring.visible = false
+    base_cost = {}
     Events.build_menu_closed.emit()
     menu_closed.emit()
 
@@ -286,3 +273,23 @@ func _clamp_center() -> void:
     var margin_y: float = max(padding.y, radius + button_size.y + 48.0)
     center.x = clamp(center.x, margin_x, rect.size.x - margin_x)
     center.y = clamp(center.y, margin_y, rect.size.y - margin_y)
+
+func set_base_cost(cost: Dictionary) -> void:
+    base_cost = cost.duplicate(true)
+
+func show_unaffordable_feedback(index: int) -> void:
+    _show_unaffordable_feedback(index)
+
+func _combine_costs(a: Dictionary, b: Dictionary) -> Dictionary:
+    var combined: Dictionary = {}
+    for key in a.keys():
+        var resource: StringName = key if typeof(key) == TYPE_STRING_NAME else StringName(String(key))
+        var amount: float = float(a[key])
+        combined[resource] = float(combined.get(resource, 0.0)) + amount
+    for key in b.keys():
+        var resource_b: StringName = key if typeof(key) == TYPE_STRING_NAME else StringName(String(key))
+        var amount_b: float = float(b[key])
+        combined[resource_b] = float(combined.get(resource_b, 0.0)) + amount_b
+    for key in combined.keys():
+        combined[key] = int(round(float(combined[key])))
+    return combined
