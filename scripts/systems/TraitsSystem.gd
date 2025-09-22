@@ -1,5 +1,4 @@
 extends Node
-class_name TraitsSystem
 
 const KEY_HARVEST_TRICKLE_MULTIPLIER := StringName("harvest_trickle_multiplier")
 const DEFAULT_KEY_GATHER_MULTIPLIER := StringName("gather_multiplier")
