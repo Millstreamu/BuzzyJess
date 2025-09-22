@@ -31,6 +31,7 @@ var _threat_lookup: Dictionary = {}
 var _threat_weights: Dictionary = {}
 var _threat_global: Dictionary = {}
 var _boss_cfg: Dictionary = {}
+var _traits_cfg: Dictionary = {}
 var _egg_feed_costs: Dictionary = {}
 var _egg_hatch_seconds: Dictionary = {}
 var _egg_bump_probs: Dictionary = {}
@@ -45,6 +46,7 @@ func _ready() -> void:
     load_queens()
     load_threats()
     load_boss()
+    load_traits()
     load_eggs()
     load_items()
 
@@ -276,6 +278,88 @@ func load_boss() -> void:
             _boss_cfg[String(key)] = float(value)
         else:
             _boss_cfg[String(key)] = value
+
+func load_traits() -> void:
+    _traits_cfg.clear()
+    var path: String = "res://data/configs/traits.json"
+    if not FileAccess.file_exists(path):
+        push_warning("traits.json not found at %s" % path)
+        return
+    var file := FileAccess.open(path, FileAccess.READ)
+    if file == null:
+        push_warning("Failed to open %s" % path)
+        return
+    var text_json: String = file.get_as_text()
+    file.close()
+    var parsed: Variant = JSON.parse_string(text_json)
+    if typeof(parsed) != TYPE_DICTIONARY:
+        push_warning("Invalid traits.json contents")
+        return
+    var traits_list: Array[Dictionary] = []
+    var traits_value: Variant = parsed.get("traits", [])
+    if typeof(traits_value) == TYPE_ARRAY:
+        for entry in traits_value:
+            if typeof(entry) != TYPE_DICTIONARY:
+                continue
+            var id_value: Variant = entry.get("id", "")
+            if typeof(id_value) != TYPE_STRING and typeof(id_value) != TYPE_STRING_NAME:
+                continue
+            var id_string: String = String(id_value)
+            if id_string.is_empty():
+                continue
+            var trait: Dictionary = {}
+            trait["id"] = StringName(id_string)
+            trait["name"] = String(entry.get("name", id_string))
+            trait["desc"] = String(entry.get("desc", ""))
+            var effects: Dictionary = {}
+            var effects_value: Variant = entry.get("effects", {})
+            if typeof(effects_value) == TYPE_DICTIONARY:
+                for key in effects_value.keys():
+                    effects[StringName(String(key))] = effects_value.get(key)
+            trait["effects"] = effects
+            traits_list.append(trait)
+    var rarity_pools: Dictionary = {}
+    var pools_value: Variant = parsed.get("rarity_pools", {})
+    if typeof(pools_value) == TYPE_DICTIONARY:
+        for key in pools_value.keys():
+            var pool_id: String = String(key)
+            var pool_entries: Array[Dictionary] = []
+            var pool_value: Variant = pools_value.get(key, [])
+            if typeof(pool_value) != TYPE_ARRAY:
+                continue
+            for item in pool_value:
+                if typeof(item) != TYPE_DICTIONARY:
+                    continue
+                var trait_id_value: Variant = item.get("id", "")
+                if typeof(trait_id_value) != TYPE_STRING and typeof(trait_id_value) != TYPE_STRING_NAME:
+                    continue
+                var pool_entry: Dictionary = {}
+                pool_entry["id"] = StringName(String(trait_id_value))
+                var weight_value: Variant = item.get("weight", 0.0)
+                if typeof(weight_value) == TYPE_FLOAT or typeof(weight_value) == TYPE_INT:
+                    pool_entry["weight"] = float(weight_value)
+                else:
+                    pool_entry["weight"] = 0.0
+                pool_entries.append(pool_entry)
+            rarity_pools[StringName(pool_id)] = pool_entries
+    var counts: Dictionary = {}
+    var counts_value: Variant = parsed.get("traits_per_rarity", {})
+    if typeof(counts_value) == TYPE_DICTIONARY:
+        for key in counts_value.keys():
+            var amount: Variant = counts_value.get(key, 0)
+            if typeof(amount) == TYPE_FLOAT or typeof(amount) == TYPE_INT:
+                counts[StringName(String(key))] = int(round(float(amount)))
+    var defaults: Dictionary = {}
+    var defaults_value: Variant = parsed.get("defaults", {})
+    if typeof(defaults_value) == TYPE_DICTIONARY:
+        for key in defaults_value.keys():
+            defaults[StringName(String(key))] = defaults_value.get(key)
+    _traits_cfg = {
+        "traits": traits_list,
+        "rarity_pools": rarity_pools,
+        "traits_per_rarity": counts,
+        "defaults": defaults
+    }
 
 func load_eggs() -> void:
     _egg_feed_costs.clear()
