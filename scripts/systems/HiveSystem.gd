@@ -4,6 +4,7 @@ class_name HiveSystem
 static var _cells: Dictionary = {}
 static var _hatch_timers: Dictionary = {}
 static var _center_cell_id: int = -1
+static var _coord_to_id: Dictionary = {}
 
 const EMPTY_TYPE := StringName("Empty")
 const BROOD_TYPE := StringName("Brood")
@@ -13,6 +14,7 @@ static func reset() -> void:
     _cells.clear()
     _hatch_timers.clear()
     _center_cell_id = -1
+    _coord_to_id.clear()
 
 static func register_cell(cell_id: int, data: Dictionary) -> void:
     var entry: Dictionary = data.duplicate(true)
@@ -23,7 +25,15 @@ static func register_cell(cell_id: int, data: Dictionary) -> void:
     entry["assigned"] = entry.get("assigned", [])
     entry["size"] = entry.get("size", 1)
     entry["efficiency_bonus"] = entry.get("efficiency_bonus", 0)
+    var coord_value: Variant = entry.get("coord", Vector2i.ZERO)
+    var coord: Vector2i = Vector2i.ZERO
+    if typeof(coord_value) == TYPE_VECTOR2I:
+        coord = coord_value
+    elif typeof(coord_value) == TYPE_VECTOR2:
+        coord = Vector2i(round(coord_value.x), round(coord_value.y))
+    entry["coord"] = coord
     _cells[cell_id] = entry
+    _coord_to_id[coord] = cell_id
 
 static func set_center_cell(cell_id: int) -> void:
     _center_cell_id = cell_id
@@ -57,6 +67,22 @@ static func get_cell_type(cell_id: int) -> String:
 
 static func get_cell_entry(cell_id: int) -> Dictionary:
     return _cells.get(cell_id, {}).duplicate(true)
+
+static func get_cell_coord(cell_id: int) -> Vector2i:
+    var entry: Dictionary = _cells.get(cell_id, {})
+    if entry.is_empty():
+        return Vector2i.ZERO
+    var coord_value: Variant = entry.get("coord", Vector2i.ZERO)
+    if typeof(coord_value) == TYPE_VECTOR2I:
+        return coord_value
+    if typeof(coord_value) == TYPE_VECTOR2:
+        return Vector2i(round(coord_value.x), round(coord_value.y))
+    return Vector2i.ZERO
+
+static func get_cell_id_at_coord(coord: Vector2i) -> int:
+    if _coord_to_id.has(coord):
+        return int(_coord_to_id[coord])
+    return -1
 
 static func get_building_info(cell_id: int) -> Dictionary:
     if not _cells.has(cell_id):

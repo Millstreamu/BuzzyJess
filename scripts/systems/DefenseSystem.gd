@@ -3,6 +3,7 @@ class_name DefenseSystem
 
 const HiveSystem := preload("res://scripts/systems/HiveSystem.gd")
 const GUARD_POST_TYPE := StringName("GuardPost")
+const AdjacencyBonus := preload("res://scripts/util/AdjacencyBonus.gd")
 
 var _timers: Dictionary = {}
 var _group_to_cell: Dictionary = {}
@@ -18,6 +19,8 @@ func _ready() -> void:
             Events.cell_converted.connect(_on_cell_converted)
         if not Events.game_over.is_connected(_on_game_over):
             Events.game_over.connect(_on_game_over)
+        if Events.has_signal("cell_neighbors_changed") and not Events.cell_neighbors_changed.is_connected(_on_cell_neighbors_changed):
+            Events.cell_neighbors_changed.connect(_on_cell_neighbors_changed)
 
 func _initialize_existing_posts() -> void:
     var cells: Dictionary = HiveSystem.get_cells()
@@ -53,7 +56,8 @@ func _refresh_post(cell_id: int) -> void:
     var assigned: Array = entry.get("assigned", [])
     var has_guards: bool = not assigned.is_empty()
     timer.stop()
-    timer.wait_time = _get_tick_seconds(entry)
+    var base_seconds: float = _get_tick_seconds(entry)
+    timer.wait_time = AdjacencyBonus.compute_effective_seconds(base_seconds, GUARD_POST_TYPE, cell_id)
     if has_guards and not GameState.is_game_over():
         timer.start()
 
@@ -125,5 +129,10 @@ func _get_tick_seconds(entry: Dictionary) -> float:
     var size: int = int(entry.get("size", 1))
     var reduction: int = clamp(size - 1, 0, 2)
     return max(1.0, base - float(reduction))
+
+func _on_cell_neighbors_changed(cell_ids: Array) -> void:
+    for value in cell_ids:
+        var cell_id: int = int(value)
+        _refresh_post(cell_id)
 
 *** End File

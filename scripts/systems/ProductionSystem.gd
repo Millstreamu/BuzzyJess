@@ -1,6 +1,7 @@
 extends Node
 
 const HiveSystem := preload("res://scripts/systems/HiveSystem.gd")
+const AdjacencyBonus := preload("res://scripts/util/AdjacencyBonus.gd")
 const NECTAR_COMMON := StringName("NectarCommon")
 const HONEY_RESOURCE := StringName("Honey")
 
@@ -16,6 +17,8 @@ func _ready() -> void:
         Events.assignment_changed.connect(_on_assignment_changed)
     if not Events.resources_changed.is_connected(_on_resources_changed):
         Events.resources_changed.connect(_on_resources_changed)
+    if Events.has_signal("cell_neighbors_changed") and not Events.cell_neighbors_changed.is_connected(_on_cell_neighbors_changed):
+        Events.cell_neighbors_changed.connect(_on_cell_neighbors_changed)
     _initialize_existing_groups()
 
 func refresh_group_for_cell(cell_id: int) -> void:
@@ -68,7 +71,7 @@ func _refresh_group(cell_id: int) -> void:
     _group_to_cell[group_id] = cell_id
     _group_resources[group_id] = produces.duplicate(true)
     timer.stop()
-    timer.wait_time = tick_seconds
+    timer.wait_time = AdjacencyBonus.compute_effective_seconds(tick_seconds, cell_type, cell_id)
     var assigned: Array = entry.get("assigned", [])
     if assigned.is_empty():
         _paused_groups.erase(group_id)
@@ -170,6 +173,11 @@ func _remove_group(group_id: int) -> void:
     _group_to_cell.erase(group_id)
     _group_resources.erase(group_id)
     _paused_groups.erase(group_id)
+
+func _on_cell_neighbors_changed(cell_ids: Array) -> void:
+    for value in cell_ids:
+        var cell_id: int = int(value)
+        _refresh_group(cell_id)
 
 func _can_group_resume(group_id: int) -> bool:
     var cell_id: int = int(_group_to_cell.get(group_id, -1))

@@ -2,6 +2,7 @@ extends Node
 
 signal cell_built(cell_id: int, cell_type: StringName)
 signal cell_converted(cell_id: int, new_type: StringName)
+signal cell_neighbors_changed(cell_ids: Array)
 signal resources_changed(snapshot: Dictionary)
 signal build_menu_opened(cell_id: int)
 signal build_menu_closed()
