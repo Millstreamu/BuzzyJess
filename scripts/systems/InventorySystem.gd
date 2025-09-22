@@ -1,6 +1,6 @@
 extends Node
 var _items: Dictionary = {}
-var _item_ids: Array[StringName] = []
+var _item_ids: Array[StringName] = Array[StringName]()
 
 func _ready() -> void:
     reset()

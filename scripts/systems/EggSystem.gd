@@ -1,5 +1,4 @@
 extends Node
-class_name EggSystem
 
 const BROOD_TYPE := StringName("Brood")
 const DAMAGED_TYPE := StringName("Damaged")

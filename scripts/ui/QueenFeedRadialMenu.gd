@@ -15,11 +15,11 @@ const HONEY_RESOURCE := StringName("Honey")
 const EGG_RESOURCE := StringName("Egg")
 
 var center: Vector2 = Vector2.ZERO
-var options: Array[int] = []
-var angles: Array[float] = []
-var buttons: Array[RadialOptionControl] = []
-var costs: Array[Dictionary] = []
-var affordable: Array[bool] = []
+var options: Array[int] = Array[int]()
+var angles: Array[float] = Array[float]()
+var buttons: Array[RadialOptionControl] = Array[RadialOptionControl]()
+var costs: Array[Dictionary] = Array[Dictionary]()
+var affordable: Array[bool] = Array[bool]()
 var selected_index: int = -1
 
 var _is_open: bool = false
@@ -53,7 +53,7 @@ class RadialOptionControl extends Control:
             return "Free"
         var keys: Array = cost.keys()
         keys.sort()
-        var parts: Array[String] = []
+        var parts: Array[String] = Array[String]()
         for key in keys:
             parts.append("%s %s" % [str(cost[key]), String(key)])
         return " / ".join(parts)

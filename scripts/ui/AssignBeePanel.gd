@@ -191,7 +191,7 @@ func trait_display_name(trait_id: StringName) -> String:
     return id
 
 func _normalize_traits(value: Variant) -> Array[StringName]:
-    var traits: Array[StringName] = []
+    var traits: Array[StringName] = Array[StringName]()
     if typeof(value) != TYPE_ARRAY:
         return traits
     var seen: Dictionary = {}
