@@ -1,0 +1,23 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/ui/QueenFeedRadialMenu.gd" id="1"]
+[ext_resource type="Script" path="res://scripts/ui/SelectionRing.gd" id="2"]
+
+[node name="QueenFeedRadialMenu" type="Control"]
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 0.0
+offset_top = 0.0
+offset_right = 0.0
+offset_bottom = 0.0
+mouse_filter = 2
+script = ExtResource("1")
+
+[node name="OptionLayer" type="Control" parent="."]
+mouse_filter = 2
+
+[node name="SelectionRing" type="Control" parent="OptionLayer"]
+offset_right = 72.0
+offset_bottom = 72.0
+mouse_filter = 2
+script = ExtResource("2")

@@ -5,6 +5,7 @@ const FloatingTextScene := preload("res://scenes/FX/FloatingText.tscn")
 const HAMMER_TEXTURE := preload("res://art/icons/hammer.svg")
 const QueenSelectScene := preload("res://scenes/UI/QueenSelect.tscn")
 const SEAT_TYPE := StringName("QueenSeat")
+const EGG_RESOURCE := StringName("Egg")
 
 @export var hex_size: float = 48.0
 @export var hex_color: Color = Color(1.0, 0.9, 0.1)
@@ -58,6 +59,7 @@ var _hover_cell_id: int = -1
 @onready var _build_menu: BuildRadialMenu = $CanvasLayer/BuildRadialMenu
 @onready var _resources_panel: ResourcesPanel = $CanvasLayer/ResourcesPanel
 @onready var _build_manager: BuildManager = $BuildManager
+@onready var _queen_controller: QueenController = $QueenController
 
 func _ready() -> void:
     _generate_grid()
@@ -76,6 +78,8 @@ func _ready() -> void:
         Events.cell_converted.connect(_on_cell_converted)
     if not Events.harvest_tick.is_connected(_on_harvest_tick):
         Events.harvest_tick.connect(_on_harvest_tick)
+    if not Events.queen_fed.is_connected(_on_queen_fed):
+        Events.queen_fed.connect(_on_queen_fed)
     queue_redraw()
     var viewport := get_viewport()
     if viewport:
@@ -223,7 +227,7 @@ func _unhandled_input(event: InputEvent) -> void:
             viewport.set_input_as_handled()
         return
 
-    if (_build_menu and _build_menu.is_open()) or (_assign_controller and _assign_controller.is_panel_open()) or (_resources_panel and _resources_panel.is_open()) or (_gathering_controller and _gathering_controller.is_panel_open()):
+    if (_build_menu and _build_menu.is_open()) or (_queen_controller and _queen_controller.is_menu_open()) or (_assign_controller and _assign_controller.is_panel_open()) or (_resources_panel and _resources_panel.is_open()) or (_gathering_controller and _gathering_controller.is_panel_open()):
         return
 
     if event is InputEventMouseButton:
@@ -263,7 +267,14 @@ func _handle_confirm() -> void:
 
 func _handle_cell_interaction(cell_id: int, coord: Vector2i) -> void:
     if cell_id == _queen_cell_id:
-        UIFx.flash_deny()
+        if GameState.queen_id == StringName(""):
+            UIFx.flash_deny()
+            return
+        if _queen_controller:
+            var world_position: Vector2 = _get_cell_center(coord)
+            _queen_controller.open_radial(world_position)
+        else:
+            UIFx.flash_deny()
         return
     var state: int = int(_cell_states.get(cell_id, BuildState.LOCKED))
     if state == BuildState.AVAILABLE:
@@ -405,6 +416,18 @@ func _on_harvest_tick(_id: StringName, _time_left: float, partials: Dictionary) 
         var resource_id: StringName = StringName(String(key))
         var short_name: String = ConfigDB.get_resource_short_name(resource_id)
         _spawn_floating_text(position, "+%d %s" % [amount, short_name])
+
+func _on_queen_fed(_honey_spent: int, eggs: int) -> void:
+    if eggs <= 0:
+        return
+    if _queen_cell_id == -1:
+        return
+    if not _coords_by_id.has(_queen_cell_id):
+        return
+    var coord: Vector2i = _coords_by_id[_queen_cell_id]
+    var center: Vector2 = _get_cell_center(coord)
+    var short_name: String = ConfigDB.get_resource_short_name(EGG_RESOURCE)
+    _spawn_floating_text(center, "+%d %s" % [eggs, short_name])
 
 func _on_cell_converted(_cell_id: int, _new_type: StringName) -> void:
     queue_redraw()
