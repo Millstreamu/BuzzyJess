@@ -55,7 +55,7 @@ func _refresh_group(cell_id: int) -> void:
         return
     var group_id: int = int(entry.get("group_id", cell_id))
     var type_str: String = String(entry.get("type", "Empty"))
-    if type_str == "Empty" or type_str == "Brood" or type_str == "Damage":
+    if type_str == "Empty" or type_str == "Brood" or type_str == "Damaged":
         _remove_group(group_id)
         return
     var cell_type: StringName = StringName(type_str)
@@ -111,7 +111,7 @@ func _process_group_tick(group_id: int) -> void:
         _remove_group(group_id)
         return
     var type_str: String = String(entry.get("type", "Empty"))
-    if type_str == "Empty" or type_str == "Brood" or type_str == "Damage":
+    if type_str == "Empty" or type_str == "Brood" or type_str == "Damaged":
         _remove_group(group_id)
         return
     var produces: Dictionary = _group_resources.get(group_id, {})

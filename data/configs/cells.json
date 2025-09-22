@@ -1,66 +1,70 @@
 {
   "Brood": {
-    "cost": {"Egg": 1, "Honey": 5, "Pollen": 2},
-    "hatch_seconds": 10,
-    "post_hatch_type": "Damage",
+    "cost": { "Comb": 1, "Honey": 5 },
+    "requires_bee": true,
+    "build_seconds": 5,
+    "post_hatch": "Damaged",
     "mergeable": false,
-    "assignable": false,
-    "tick_seconds": 0,
-    "produces": {}
+    "trait_construction_bonus": 3
   },
-  "Damage": {
+  "Damaged": {
+    "repair": {
+      "cost": { "Comb": 2 },
+      "requires_bee": true,
+      "seconds": 30,
+      "trait_construction_bonus": 3
+    },
     "buildable": false,
     "assignable": false,
-    "mergeable": false,
-    "repair": {"enabled": true, "cost": {}, "seconds": 0}
+    "mergeable": false
   },
   "Storage": {
-    "cost": {"Comb": 8},
+    "cost": { "Comb": 8 },
     "mergeable": true,
     "tick_seconds": 0,
     "produces": {}
   },
   "HoneyVat": {
-    "cost": {"Comb": 6, "NectarCommon": 4},
+    "cost": { "Comb": 6, "NectarCommon": 4 },
     "mergeable": true,
     "tick_seconds": 5,
-    "produces": {"Honey": 1},
+    "produces": { "Honey": 1 },
     "adjacency_time_bonus_per_neighbor_seconds": 0.5,
     "adjacency_min_seconds": 3.0,
     "adjacency_bonus_enabled": true
   },
   "WaxWorkshop": {
-    "cost": {"Pollen": 5, "NectarCommon": 3},
+    "cost": { "Pollen": 5, "NectarCommon": 3 },
     "mergeable": true,
     "tick_seconds": 5,
-    "produces": {"Comb": 1},
+    "produces": { "Comb": 1 },
     "adjacency_time_bonus_per_neighbor_seconds": 0.5,
     "adjacency_min_seconds": 2.0,
     "adjacency_bonus_enabled": true
   },
   "CandleHall": {
-    "cost": {"Comb": 4, "Honey": 4, "Pollen": 4},
+    "cost": { "Comb": 4, "Honey": 4, "Pollen": 4 },
     "mergeable": true,
     "tick_seconds": 6,
-    "produces": {"Honey": 1},
+    "produces": { "Honey": 1 },
     "adjacency_time_bonus_per_neighbor_seconds": 0.5,
     "adjacency_min_seconds": 20.0,
     "adjacency_bonus_enabled": true
   },
   "GuardPost": {
-    "cost": {"Comb": 5, "Honey": 3, "PetalRed": 2},
+    "cost": { "Comb": 5, "Honey": 3, "PetalRed": 2 },
     "mergeable": true,
     "tick_seconds": 5,
-    "produces": {"Pollen": 1},
+    "produces": { "Pollen": 1 },
     "adjacency_time_bonus_per_neighbor_seconds": 0.5,
     "adjacency_min_seconds": 3.0,
     "adjacency_bonus_enabled": true
   },
   "GatheringHut": {
-    "cost": {"Comb": 3, "Honey": 3, "Pollen": 6},
+    "cost": { "Comb": 3, "Honey": 3, "Pollen": 6 },
     "mergeable": true,
     "tick_seconds": 7,
-    "produces": {"Pollen": 1}
+    "produces": { "Pollen": 1 }
   },
   "QueenSeat": {
     "buildable": false,
