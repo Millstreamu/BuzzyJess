@@ -307,11 +307,12 @@ func load_traits() -> void:
             var id_string: String = String(id_value)
             if id_string.is_empty():
                 continue
-            var trait: Dictionary = {}
-            trait["id"] = StringName(id_string)
-            trait["name"] = String(entry.get("name", id_string))
-            trait["desc"] = String(entry.get("desc", ""))
-            var effects: Dictionary = {}
+            var trait := {
+                "id": StringName(id_string),
+                "name": String(entry.get("name", id_string)),
+                "desc": String(entry.get("desc", "")),
+            }
+            var effects := {}
             var effects_value: Variant = entry.get("effects", {})
             if typeof(effects_value) == TYPE_DICTIONARY:
                 for key in effects_value.keys():
