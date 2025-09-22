@@ -321,9 +321,9 @@ func _draw() -> void:
                 var rect := Rect2(center - Vector2(hammer_scale, hammer_scale) * 0.5, Vector2.ONE * hammer_scale)
                 draw_texture_rect(HAMMER_TEXTURE, rect, false)
             elif state == BuildState.BUILDING:
-                var progress := clamp(float(_building_progress.get(cell_id, _build_manager.get_progress(cell_id) if _build_manager else 0.0)), 0.0, 1.0)
+                var progress: float = clamp(float(_building_progress.get(cell_id, _build_manager.get_progress(cell_id) if _build_manager else 0.0)), 0.0, 1.0)
                 var ring_radius := hex_size * 0.95
-                var ring_width := max(hex_size * 0.12, 3.0)
+                var ring_width: float = max(hex_size * 0.12, 3.0)
                 var background_color := selection_color.darkened(0.5)
                 draw_arc(center, ring_radius, -PI / 2.0, -PI / 2.0 + TAU, 64, background_color, ring_width * 0.4)
                 draw_arc(center, ring_radius, -PI / 2.0, -PI / 2.0 + TAU * progress, 64, selection_color, ring_width)
