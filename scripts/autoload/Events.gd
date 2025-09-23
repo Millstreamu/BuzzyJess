@@ -1,6 +1,9 @@
 extends Node
 
-signal cell_built(cell_id: int, cell_type: StringName)
+signal task_started(cell_id: int, kind: StringName, bee_id: int, ends_at: float)
+signal task_finished(cell_id: int, kind: StringName, bee_id: int, success: bool)
+signal cell_built(cell_id: int)
+signal cell_repaired(cell_id: int)
 signal cell_converted(cell_id: int, new_type: StringName)
 signal cell_neighbors_changed(cell_ids: Array)
 signal resources_changed(snapshot: Dictionary)

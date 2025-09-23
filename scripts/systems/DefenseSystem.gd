@@ -25,7 +25,7 @@ func _initialize_existing_posts() -> void:
     for cell_id in cells.keys():
         _refresh_post(int(cell_id))
 
-func _on_cell_built(cell_id: int, _cell_type: StringName) -> void:
+func _on_cell_built(cell_id: int) -> void:
     _refresh_post(cell_id)
 
 func _on_assignment_changed(cell_id: int, _bee_id: int) -> void:

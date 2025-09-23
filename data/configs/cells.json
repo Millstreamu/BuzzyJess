@@ -1,4 +1,13 @@
 {
+  "Empty": {
+    "build": {
+      "cost": { "Comb": 1 },
+      "requires_bee": true,
+      "seconds": 10,
+      "trait_construction_bonus": 3
+    },
+    "mergeable": false
+  },
   "Brood": {
     "cost": { "Comb": 1, "Honey": 5 },
     "requires_bee": true,

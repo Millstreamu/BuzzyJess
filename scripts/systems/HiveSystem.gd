@@ -10,6 +10,17 @@ const EMPTY_TYPE := StringName("Empty")
 const BROOD_TYPE := StringName("Brood")
 const DAMAGED_TYPE := StringName("Damaged")
 
+const BUILD_STATE_BUILT := 3
+
+const NEIGHBOR_DIRS: Array[Vector2i] = [
+    Vector2i(1, 0),
+    Vector2i(1, -1),
+    Vector2i(0, -1),
+    Vector2i(-1, 0),
+    Vector2i(-1, 1),
+    Vector2i(0, 1)
+]
+
 static func reset() -> void:
     _cells.clear()
     _cell_timers.clear()
@@ -62,6 +73,13 @@ static func convert_cell_type(cell_id: int, new_type: StringName) -> void:
         entry["efficiency_bonus"] = 0
     _cells[cell_id] = entry
 
+static func create_empty_cell(cell_id: int) -> void:
+    if cell_id == -1:
+        return
+    if not _cells.has(cell_id):
+        return
+    convert_cell_type(cell_id, EMPTY_TYPE)
+
 static func set_cell_metadata(cell_id: int, key: String, value: Variant) -> void:
     if not _cells.has(cell_id):
         return
@@ -108,6 +126,30 @@ static func get_cell_id_at_coord(coord: Vector2i) -> int:
     if _coord_to_id.has(coord):
         return int(_coord_to_id[coord])
     return -1
+
+static func get_neighbor_ids(cell_id: int) -> Array[int]:
+    var neighbors: Array[int] = []
+    if cell_id == -1:
+        return neighbors
+    if not _cells.has(cell_id):
+        return neighbors
+    var coord: Vector2i = get_cell_coord(cell_id)
+    for offset in NEIGHBOR_DIRS:
+        var neighbor_coord: Vector2i = coord + offset
+        var neighbor_id: int = get_cell_id_at_coord(neighbor_coord)
+        if neighbor_id != -1:
+            neighbors.append(neighbor_id)
+    return neighbors
+
+static func is_adjacent_to_any(cell_id: int) -> bool:
+    for neighbor_id in get_neighbor_ids(cell_id):
+        var state: int = GameState.get_hive_cell_state(neighbor_id, 0)
+        if state == BUILD_STATE_BUILT:
+            return true
+        var neighbor_type: String = get_cell_type(neighbor_id)
+        if neighbor_type != String(EMPTY_TYPE):
+            return true
+    return false
 
 static func get_building_info(cell_id: int) -> Dictionary:
     if not _cells.has(cell_id):
