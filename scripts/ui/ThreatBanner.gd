@@ -94,13 +94,20 @@ func _on_threat_resolved(id: StringName, success: bool, power: int, defense: int
     power_value.text = String(power)
     progress_bar.visible = false
     timer_value.text = "--"
-    var text := success
-        ? "DEFENDED! %d / %d" % [defense, power]
-        : "BREACH! %d / %d" % [defense, power]
-    var color := success ? SUCCESS_COLOR : FAIL_COLOR
+    var text: String
+    var color: Color
+    if success:
+        text = "DEFENDED! %d / %d" % [defense, power]
+        color = SUCCESS_COLOR
+    else:
+        text = "BREACH! %d / %d" % [defense, power]
+        color = FAIL_COLOR
     _set_result(text, color, true)
     var now: float = Time.get_unix_time_from_system()
-    _result_clear_time = success ? now + RESULT_DISPLAY_SECONDS : -1.0
+    if success:
+        _result_clear_time = now + RESULT_DISPLAY_SECONDS
+    else:
+        _result_clear_time = -1.0
     if not success:
         _pending_cooldown = 0.0
     _set_banner_visible(true)
@@ -144,13 +151,20 @@ func _on_boss_phase_resolved(phase: int, success: bool, power: int, defense: int
     if phase != _boss_phase:
         _boss_phase = phase
     _state = BannerState.BOSS_PHASE_RESULT
-    var text := success
-        ? "PHASE %d CLEARED %d / %d" % [phase, defense, power]
-        : "PHASE %d FAILED %d / %d" % [phase, defense, power]
-    var color := success ? SUCCESS_COLOR : FAIL_COLOR
+    var text: String
+    var color: Color
+    if success:
+        text = "PHASE %d CLEARED %d / %d" % [phase, defense, power]
+        color = SUCCESS_COLOR
+    else:
+        text = "PHASE %d FAILED %d / %d" % [phase, defense, power]
+        color = FAIL_COLOR
     _set_result(text, color, true)
     var now: float = Time.get_unix_time_from_system()
-    _result_clear_time = success ? now + RESULT_DISPLAY_SECONDS : -1.0
+    if success:
+        _result_clear_time = now + RESULT_DISPLAY_SECONDS
+    else:
+        _result_clear_time = -1.0
     _pending_cooldown = 0.0
     _set_banner_visible(true)
 
