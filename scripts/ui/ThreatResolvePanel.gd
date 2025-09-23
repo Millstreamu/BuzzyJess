@@ -130,8 +130,8 @@ func _update_next_time() -> void:
     if _next_end_time <= 0.0:
         next_time.text = ""
         return
-    var now := Time.get_unix_time_from_system()
-    var left := max(0.0, _next_end_time - now)
+    var now: float = Time.get_unix_time_from_system()
+    var left: float = maxf(0.0, _next_end_time - now)
     var minutes := int(left) / 60
     var seconds := int(left) % 60
     next_time.text = " in %02d:%02d" % [minutes, seconds]
