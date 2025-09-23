@@ -18,7 +18,7 @@ static func run(cell_id: int, seconds: float, preferred_trait: StringName = Stri
         return false
     var duration: float = max(0.0, seconds)
     if allow_bonus:
-        var bonus := 0.0
+        var bonus: float = 0.0
         if bonus_trait == DEFAULT_BONUS_TRAIT:
             bonus = TraitsSystem.build_time_bonus_seconds(bee_id)
             if bonus_amount > 0.0:
@@ -32,12 +32,12 @@ static func run(cell_id: int, seconds: float, preferred_trait: StringName = Stri
 static func run_build_or_repair(cell_id: int, base_seconds: float, bee_id: int, is_repair: bool, on_done: Callable = Callable()) -> bool:
     if bee_id <= 0:
         return false
-    var bonus := 0.0
+    var bonus: float = 0.0
     if is_repair:
         bonus = TraitsSystem.repair_time_bonus_seconds(bee_id)
     else:
         bonus = TraitsSystem.build_time_bonus_seconds(bee_id)
-    var wait := max(1.0, base_seconds - bonus)
+    var wait: float = max(1.0, base_seconds - bonus)
     return _start_task(cell_id, bee_id, wait, on_done)
 
 static func get_task_timer(cell_id: int) -> SceneTreeTimer:
