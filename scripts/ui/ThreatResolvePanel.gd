@@ -82,7 +82,7 @@ func _on_next_threat(id: StringName, _power: int, end_time: float) -> void:
     if id.is_empty():
         next_name.text = "—"
     else:
-        var display_name := typeof(ConfigDB) == TYPE_OBJECT ? ConfigDB.get_threat_display_name(id) : String(id).capitalize()
+        var display_name := typeof(ConfigDB) == TYPE_OBJECT ? ConfigDB.get_threat_display_name(id) : str(id).capitalize()
         next_name.text = "Next: %s" % display_name
     if _next_preview_active:
         _start_next_countdown(_sequence_token)
