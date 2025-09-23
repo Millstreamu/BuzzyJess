@@ -1,0 +1,12 @@
+{
+  "contracts": [
+    {
+      "id": "ThistleFlower",
+      "name": "Thistle Flower",
+      "required_bees": 3,
+      "duration_seconds": 20,
+      "cost": {"Honey": 10, "Pollen": 5},
+      "reward": {"ThistleFlower": 1}
+    }
+  ]
+}

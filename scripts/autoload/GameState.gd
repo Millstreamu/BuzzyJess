@@ -50,6 +50,7 @@ func _ready() -> void:
     hive_cell_states.clear()
     reset_queen_selection()
     _initialize_resources()
+    _initialize_inventory()
     _generate_default_bees()
     _connect_event_listeners()
     run_start_time = Time.get_unix_time_from_system()
@@ -224,6 +225,12 @@ func _initialize_resources() -> void:
         entry["qty"] = ConfigDB.get_resource_initial(id)
         resources[String(id)] = entry
     _emit_resources_changed()
+
+func _initialize_inventory() -> void:
+    if typeof(InventorySystem) != TYPE_OBJECT:
+        return
+    var start_inventory: Dictionary = ConfigDB.get_start_inventory()
+    InventorySystem.load_from_save({"inventory": start_inventory})
 
 func add_bee(data: Dictionary = {}) -> int:
     var bee_id: int = _next_bee_id

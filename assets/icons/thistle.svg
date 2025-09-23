@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <defs>
+    <linearGradient id="thistlePetal" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#f37dff"/>
+      <stop offset="100%" stop-color="#a028c2"/>
+    </linearGradient>
+    <linearGradient id="thistleStem" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#8dd46a"/>
+      <stop offset="100%" stop-color="#3f8c30"/>
+    </linearGradient>
+  </defs>
+  <path d="M32 18 C20 18 14 30 18 34 C22 38 26 36 28 42 C30 48 28 54 28 54 L36 54 C36 54 34 46 36 42 C38 38 42 40 46 34 C50 28 44 18 32 18 Z" fill="url(#thistlePetal)"/>
+  <path d="M30 54 L34 54 L34 60 L30 60 Z" fill="url(#thistleStem)"/>
+  <path d="M28 42 C30 46 32 46 34 46 C36 46 38 46 40 42" stroke="#2f6722" stroke-width="3" stroke-linecap="round" fill="none"/>
+  <path d="M22 28 L42 28" stroke="#5f1a6f" stroke-width="3" stroke-linecap="round"/>
+  <path d="M26 22 L38 22" stroke="#5f1a6f" stroke-width="3" stroke-linecap="round"/>
+</svg>

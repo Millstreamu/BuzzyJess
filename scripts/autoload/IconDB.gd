@@ -5,10 +5,14 @@ const RESOURCE_COLORS := {
     "Comb": Color(0.95, 0.64, 0.27),
     "Pollen": Color(0.98, 0.86, 0.38),
     "NectarCommon": Color(0.79, 0.52, 0.91),
+    "NectarSweet": Color(0.73, 0.61, 0.95),
+    "NectarRich": Color(0.64, 0.44, 0.86),
+    "PetalWhite": Color(0.94, 0.94, 0.96),
+    "PetalPink": Color(0.96, 0.64, 0.83),
+    "PetalYellow": Color(0.98, 0.84, 0.32),
     "PetalRed": Color(0.92, 0.32, 0.42),
-    "Egg": Color(0.94, 0.94, 0.82),
-    "ThistleHerb": Color(0.51, 0.76, 0.55),
-    "ForestTonic": Color(0.35, 0.67, 0.82)
+    "PetalBlue": Color(0.38, 0.62, 0.92),
+    "PetalPurple": Color(0.72, 0.47, 0.88)
 }
 
 var _icon_cache: Dictionary = {}
