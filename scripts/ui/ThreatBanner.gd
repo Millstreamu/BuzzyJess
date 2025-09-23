@@ -82,7 +82,7 @@ func _on_threat_warning_started(id: StringName, power: int, end_time: float) -> 
     _state = BannerState.THREAT_WARNING
     var display_name: String = ConfigDB.get_threat_display_name(id)
     name_label.text = display_name
-    power_value.text = String(power)
+    power_value.text = str(power)
     _show_countdown(end_time)
     _set_result("", NEUTRAL_COLOR, false)
     _set_banner_visible(true)
@@ -91,7 +91,7 @@ func _on_threat_resolved(id: StringName, success: bool, power: int, defense: int
     if _current_id != id:
         _current_id = id
     _state = BannerState.THREAT_RESULT
-    power_value.text = String(power)
+    power_value.text = str(power)
     progress_bar.visible = false
     timer_value.text = "--"
     var text: String
@@ -140,7 +140,7 @@ func _on_boss_phase_started(phase: int, power: int) -> void:
     _boss_phase = phase
     _state = BannerState.BOSS_PHASE_ACTIVE
     name_label.text = "Boss Phase %d" % phase
-    power_value.text = String(power)
+    power_value.text = str(power)
     progress_bar.visible = false
     timer_value.text = "--"
     _set_result("Checking defenses...", NEUTRAL_COLOR, true)
