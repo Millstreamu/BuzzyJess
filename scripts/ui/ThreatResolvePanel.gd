@@ -50,13 +50,13 @@ func _configure_slide_animations() -> void:
     anim_slot.pivot_offset = anim_slot.size * 0.5
     var slide_up_anim := anim.get_animation("slide_up")
     if slide_up_anim:
-        var track := slide_up_anim.find_track(NodePath("."), Animation.TYPE_VALUE, StringName("position:y"))
+        var track := slide_up_anim.find_track(NodePath(".:position:y"), Animation.TYPE_VALUE)
         if track != -1:
             slide_up_anim.track_set_key_value(track, 0, _hidden_position)
             slide_up_anim.track_set_key_value(track, 1, _visible_position)
     var slide_down_anim := anim.get_animation("slide_down")
     if slide_down_anim:
-        var track_down := slide_down_anim.find_track(NodePath("."), Animation.TYPE_VALUE, StringName("position:y"))
+        var track_down := slide_down_anim.find_track(NodePath(".:position:y"), Animation.TYPE_VALUE)
         if track_down != -1:
             slide_down_anim.track_set_key_value(track_down, 0, _visible_position)
             slide_down_anim.track_set_key_value(track_down, 1, _hidden_position)
@@ -71,8 +71,8 @@ func _on_resolved(id: StringName, success: bool, power: int, defense: int) -> vo
     _slide_up_then_show(_sequence_token)
 
 func _fill_result(success: bool, power: int, defense: int) -> void:
-    result_txt.text = success ? "DEFENDED" : "DESTROYED"
-    result_txt.modulate = success ? Color(0.2, 0.8, 0.2) : Color(0.9, 0.2, 0.2)
+    result_txt.text = "DEFENDED" if success else "DESTROYED"
+    result_txt.modulate = Color(0.2, 0.8, 0.2) if success else Color(0.9, 0.2, 0.2)
     defense_val.text = "Defense %d" % defense
     power_val.text = "vs Power %d" % power
 
@@ -82,7 +82,7 @@ func _on_next_threat(id: StringName, _power: int, end_time: float) -> void:
     if id.is_empty():
         next_name.text = "—"
     else:
-        var display_name := typeof(ConfigDB) == TYPE_OBJECT ? ConfigDB.get_threat_display_name(id) : str(id).capitalize()
+        var display_name := ConfigDB.get_threat_display_name(id) if typeof(ConfigDB) == TYPE_OBJECT else str(id).capitalize()
         next_name.text = "Next: %s" % display_name
     if _next_preview_active:
         _start_next_countdown(_sequence_token)
@@ -160,7 +160,7 @@ func _clear_next_box() -> void:
 
 func _play_placeholder_anim() -> void:
     anim_slot.scale = Vector2.ONE
-    var tween := create_tween()
+    var tween: Tween = create_tween()
     tween.tween_property(anim_slot, "scale", Vector2(1.05, 1.05), 0.2).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
     tween.tween_property(anim_slot, "scale", Vector2.ONE, 0.25).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN)
 
