@@ -36,7 +36,7 @@ const NEIGHBOR_DIRS: Array[Vector2i] = [
     Vector2i(0, 1)
 ]
 
-var _cell_type_colors := {
+var _cell_type_colors: Dictionary = {
     "Empty": Color(1.0, 0.9, 0.1),
     "QueenSeat": Color(1.0, 0.85, 0.45),
     "Brood": Color(0.8, 0.4, 0.4),
