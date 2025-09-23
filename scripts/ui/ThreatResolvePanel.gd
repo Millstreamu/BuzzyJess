@@ -50,13 +50,13 @@ func _configure_slide_animations() -> void:
     anim_slot.pivot_offset = anim_slot.size * 0.5
     var slide_up_anim := anim.get_animation("slide_up")
     if slide_up_anim:
-        var track := slide_up_anim.find_track(NodePath("."), Animation.TYPE_VALUE, StringName("position:y"))
+        var track := slide_up_anim.find_track(NodePath(".:position:y"), Animation.TYPE_VALUE)
         if track != -1:
             slide_up_anim.track_set_key_value(track, 0, _hidden_position)
             slide_up_anim.track_set_key_value(track, 1, _visible_position)
     var slide_down_anim := anim.get_animation("slide_down")
     if slide_down_anim:
-        var track_down := slide_down_anim.find_track(NodePath("."), Animation.TYPE_VALUE, StringName("position:y"))
+        var track_down := slide_down_anim.find_track(NodePath(".:position:y"), Animation.TYPE_VALUE)
         if track_down != -1:
             slide_down_anim.track_set_key_value(track_down, 0, _visible_position)
             slide_down_anim.track_set_key_value(track_down, 1, _hidden_position)
@@ -160,7 +160,7 @@ func _clear_next_box() -> void:
 
 func _play_placeholder_anim() -> void:
     anim_slot.scale = Vector2.ONE
-    var tween := create_tween()
+    var tween: Tween = create_tween()
     tween.tween_property(anim_slot, "scale", Vector2(1.05, 1.05), 0.2).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
     tween.tween_property(anim_slot, "scale", Vector2.ONE, 0.25).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN)
 
