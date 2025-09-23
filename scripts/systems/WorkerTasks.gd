@@ -116,8 +116,8 @@ static func start_repair(cell_id: int) -> bool:
 static func run_build_or_repair(cell_id: int, base_seconds: float, bee_id: int, is_repair: bool, on_done: Callable = Callable()) -> bool:
     if bee_id <= 0:
         return false
-    var wait: float = max(1.0, base_seconds - (is_repair ? TraitsSystem.repair_time_bonus_seconds(bee_id) : TraitsSystem.build_time_bonus_seconds(bee_id)))
-    return _schedule_task(cell_id, is_repair ? KIND_REPAIR : KIND_BUILD, bee_id, wait, on_done)
+    var wait: float = max(1.0, base_seconds - (TraitsSystem.repair_time_bonus_seconds(bee_id) if is_repair else TraitsSystem.build_time_bonus_seconds(bee_id)))
+    return _schedule_task(cell_id, KIND_REPAIR if is_repair else KIND_BUILD, bee_id, wait, on_done)
 
 static func get_task_timer(cell_id: int) -> SceneTreeTimer:
     if not _tasks.has(cell_id):
@@ -139,7 +139,7 @@ static func _compute_wait_seconds(base_seconds: float, bee_id: int, cfg_bonus: f
     if cfg_bonus > 0.0 and TraitsSystem.bee_has(bee_id, TRAIT_CONSTRUCTION):
         bonus = cfg_bonus
     else:
-        bonus = is_repair ? TraitsSystem.repair_time_bonus_seconds(bee_id) : TraitsSystem.build_time_bonus_seconds(bee_id)
+        bonus = TraitsSystem.repair_time_bonus_seconds(bee_id) if is_repair else TraitsSystem.build_time_bonus_seconds(bee_id)
         if cfg_bonus > 0.0 and bonus > 0.0:
             bonus = min(bonus, cfg_bonus)
         elif cfg_bonus > 0.0 and bonus <= 0.0:
