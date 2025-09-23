@@ -1,6 +1,6 @@
-[gd_scene load_steps=5 format=3]
+[gd_scene load_steps=6 format=3]
 
-[ext_resource type="Script" path="res://scripts/ui/HarvestPanel.gd" id="1"]
+[ext_resource type="Script" path="res://scripts/ui/OffersPanel.gd" id="1"]
 
 [sub_resource type="Animation" id="1"]
 resource_name = "slide_in"
@@ -40,12 +40,12 @@ _anims = {
 "slide_out": SubResource("2")
 }
 
-[node name="HarvestPanel" type="Control"]
+[node name="OffersPanel" type="Control"]
 layout_mode = 1
 anchors_preset = 1
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_left = -420.0
+offset_left = -460.0
 offset_top = 40.0
 offset_right = -24.0
 offset_bottom = -40.0
@@ -89,16 +89,46 @@ custom_constants/separation = 18
 [node name="Header" type="Label" parent="Panel/Layout"]
 layout_mode = 2
 size_flags_horizontal = 3
-text = "Harvest Fields"
 horizontal_alignment = 1
+text = "Harvests & Contracts"
 
-[node name="ListScroll" type="ScrollContainer" parent="Panel/Layout"]
+[node name="TabContainer" type="TabContainer" parent="Panel/Layout"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="Harvests" type="VBoxContainer" parent="Panel/Layout/TabContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+custom_constants/separation = 12
+title = "Harvests"
+
+[node name="ListScroll" type="ScrollContainer" parent="Panel/Layout/TabContainer/Harvests"]
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
 horizontal_scroll_mode = 0
 
-[node name="VBox" type="VBoxContainer" parent="Panel/Layout/ListScroll"]
+[node name="VBox" type="VBoxContainer" parent="Panel/Layout/TabContainer/Harvests/ListScroll"]
+layout_mode = 2
+size_flags_horizontal = 3
+custom_constants/separation = 12
+
+[node name="Contracts" type="VBoxContainer" parent="Panel/Layout/TabContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+custom_constants/separation = 12
+title = "Item Quests"
+
+[node name="ListScroll" type="ScrollContainer" parent="Panel/Layout/TabContainer/Contracts"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+horizontal_scroll_mode = 0
+
+[node name="VBox" type="VBoxContainer" parent="Panel/Layout/TabContainer/Contracts/ListScroll"]
 layout_mode = 2
 size_flags_horizontal = 3
 custom_constants/separation = 12
@@ -112,4 +142,3 @@ alignment = 1
 layout_mode = 2
 text = "Space = Start    Z = Close"
 horizontal_alignment = 1
-
