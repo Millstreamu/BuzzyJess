@@ -342,6 +342,13 @@ func _draw_bee_icons(center: Vector2, icons: Array) -> void:
 func _get_cell_center(coord: Vector2i) -> Vector2:
     return _positions.get(coord, Vector2.ZERO) + _grid_offset
 
+func get_cell_center_world(cell_id: int) -> Vector2:
+    if not _coords_by_id.has(cell_id):
+        return to_global(Vector2.ZERO)
+    var coord: Vector2i = _coords_by_id[cell_id]
+    var local_center: Vector2 = _get_cell_center(coord)
+    return to_global(local_center)
+
 func _draw() -> void:
     for coord in _hex_coords:
         var center: Vector2 = _get_cell_center(coord)
