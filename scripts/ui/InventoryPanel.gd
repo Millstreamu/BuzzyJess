@@ -5,6 +5,9 @@ const SLIDE_IN_ANIM := StringName("slide_in")
 const SLIDE_OUT_ANIM := StringName("slide_out")
 const ROW_SCENE := preload("res://scenes/UI/InventoryRow.tscn")
 
+const OPEN_X_POSITION := 0.0
+const CLOSED_X_POSITION := -360.0
+
 @onready var anim: AnimationPlayer = $AnimationPlayer
 @onready var panel: PanelContainer = $Panel
 @onready var list_vbox: VBoxContainer = $Panel/Layout/ListScroll/VBox
@@ -17,6 +20,7 @@ var _closing: bool = false
 
 func _ready() -> void:
     visible = false
+    position.x = CLOSED_X_POSITION
     set_process_unhandled_input(true)
     if anim:
         anim.animation_finished.connect(_on_animation_finished)
@@ -45,7 +49,7 @@ func _open() -> void:
     if anim and anim.has_animation(SLIDE_IN_ANIM):
         anim.play(SLIDE_IN_ANIM)
     else:
-        position.x = 0
+        position.x = OPEN_X_POSITION
 
 func _close() -> void:
     if not _is_open or _closing:
@@ -117,9 +121,10 @@ func _on_animation_finished(name: StringName) -> void:
     if name == SLIDE_OUT_ANIM:
         _finalize_close()
     elif name == SLIDE_IN_ANIM:
-        position.x = 0
+        position.x = OPEN_X_POSITION
 
 func _finalize_close() -> void:
     visible = false
     _is_open = false
     _closing = false
+    position.x = CLOSED_X_POSITION
