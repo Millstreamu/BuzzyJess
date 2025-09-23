@@ -391,7 +391,7 @@ func get_free_gatherers() -> int:
     return max(total_assigned - _reserved_gatherers.size(), 0)
 
 func reserve_gatherers(amount: int) -> Array[int]:
-    var reserved: Array[int] = Array[int]()
+    var reserved: Array[int] = []
     if amount <= 0:
         return reserved
     _prune_reserved_gatherers()
@@ -407,7 +407,7 @@ func reserve_gatherers(amount: int) -> Array[int]:
     return reserved
 
 func free_gatherers(value: Variant) -> void:
-    var ids: Array[int] = Array[int]()
+    var ids: Array[int] = []
     if typeof(value) == TYPE_ARRAY:
         for entry in value:
             ids.append(int(entry))
@@ -464,7 +464,7 @@ func _get_total_assigned_gatherers() -> int:
     return total
 
 func _get_gatherer_bee_ids() -> Array[int]:
-    var ids: Array[int] = Array[int]()
+    var ids: Array[int] = []
     var cells: Dictionary = HiveSystem.get_cells()
     for entry in cells.values():
         if String(entry.get("type", "")) != "GatheringHut":
@@ -484,7 +484,7 @@ func _get_available_gatherer_ids() -> Array[int]:
     _prune_reserved_gatherers()
     var ids: Array[int] = _get_gatherer_bee_ids()
     ids.sort()
-    var available: Array[int] = Array[int]()
+    var available: Array[int] = []
     for bee_id in ids:
         if not _reserved_gatherers.has(bee_id):
             available.append(int(bee_id))
@@ -497,7 +497,7 @@ func _prune_reserved_gatherers() -> void:
     var gatherer_set: Dictionary = {}
     for bee_id in gatherers:
         gatherer_set[bee_id] = true
-    var to_remove: Array[int] = Array[int]()
+    var to_remove: Array[int] = []
     for key in _reserved_gatherers.keys():
         var bee_id: int = int(key)
         if not gatherer_set.has(bee_id):
@@ -589,7 +589,7 @@ func _emit_bees_changed() -> void:
         Events.bees_changed.emit(get_bees_snapshot())
 
 func _normalize_traits(value: Variant) -> Array[StringName]:
-    var traits: Array[StringName] = Array[StringName]()
+    var traits: Array[StringName] = []
     var items: Array = []
     if typeof(value) == TYPE_ARRAY:
         items = value

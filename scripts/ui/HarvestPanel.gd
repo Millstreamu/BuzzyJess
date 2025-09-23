@@ -12,7 +12,7 @@ const SLIDE_OUT_ANIMATION := StringName("slide_out")
 @onready var list_container: VBoxContainer = $Panel/Layout/ListScroll/VBox
 @onready var footer_label: Label = $Panel/Layout/Footer/Hint
 
-var _offers: Array[Dictionary] = Array[Dictionary]()
+var _offers: Array[Dictionary] = []
 var _selected: int = 0
 var _is_open: bool = false
 var _closing: bool = false
@@ -225,7 +225,7 @@ func _format_cost_text(value: Variant) -> String:
     for key in dict.keys():
         keys.append(String(key))
     keys.sort()
-    var parts: Array[String] = Array[String]()
+    var parts: Array[String] = []
     for key_string in keys:
         var amount: int = int(dict.get(StringName(key_string), dict.get(key_string, 0)))
         var short_name: String = ConfigDB.get_resource_short_name(StringName(key_string))
@@ -242,7 +242,7 @@ func _format_yield_text(value: Variant) -> String:
     for key in dict.keys():
         keys.append(String(key))
     keys.sort()
-    var parts: Array[String] = Array[String]()
+    var parts: Array[String] = []
     for key_string in keys:
         var amount: int = int(dict.get(StringName(key_string), dict.get(key_string, 0)))
         var short_name: String = ConfigDB.get_resource_short_name(StringName(key_string))

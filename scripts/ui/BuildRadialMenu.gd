@@ -11,11 +11,11 @@ signal menu_closed()
 
 var cell_id: int = -1
 var center: Vector2 = Vector2.ZERO
-var options: Array[StringName] = Array[StringName]()
-var angles: Array[float] = Array[float]()
-var buttons: Array[RadialOptionControl] = Array[RadialOptionControl]()
-var costs: Array[Dictionary] = Array[Dictionary]()
-var affordable: Array[bool] = Array[bool]()
+var options: Array[StringName] = []
+var angles: Array[float] = []
+var buttons: Array[RadialOptionControl] = []
+var costs: Array[Dictionary] = []
+var affordable: Array[bool] = []
 var selected_index: int = -1
 var base_cost: Dictionary = {}
 
@@ -50,7 +50,7 @@ class RadialOptionControl extends Control:
             return "Free"
         var keys: Array = cost.keys()
         keys.sort()
-        var parts: Array[String] = Array[String]()
+        var parts: Array[String] = []
         for key in keys:
             parts.append("%s %s" % [str(cost[key]), key])
         return " / ".join(parts)

@@ -58,7 +58,7 @@ func _update_button(button: Button, tier: StringName) -> void:
     var cost: Dictionary = ConfigDB.eggs_get_feed_cost(tier)
     var label: String = String(tier)
     if not cost.is_empty():
-        var parts: Array[String] = Array[String]()
+        var parts: Array[String] = []
         for key in cost.keys():
             parts.append("%d %s" % [int(cost[key]), String(key)])
         label += " (" + ", ".join(parts) + ")"
