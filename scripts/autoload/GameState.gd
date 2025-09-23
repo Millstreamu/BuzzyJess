@@ -147,22 +147,47 @@ func find_available_bee(preferred_trait: StringName = StringName("")) -> int:
             fallback = bee_id
     return fallback
 
+func get_free_bee_id(preferred_trait: StringName = StringName("")) -> int:
+    return find_available_bee(preferred_trait)
+
+func reserve_bee(bee_id: int) -> bool:
+    if bee_id <= 0:
+        return false
+    if not _bee_lookup.has(bee_id):
+        return false
+    var bee: Dictionary = _bee_lookup[bee_id]
+    if bee.is_empty():
+        return false
+    if String(bee.get("status", BEE_STATUS_IDLE)) != BEE_STATUS_IDLE:
+        return false
+    bee["status"] = BEE_STATUS_TASK
+    _bee_lookup[bee_id] = bee
+    bees[bee_id] = bee
+    _emit_bees_changed()
+    return true
+
 func reserve_bee_for_task(preferred_trait: StringName = StringName("")) -> Dictionary:
-    var bee_id: int = find_available_bee(preferred_trait)
+    var bee_id: int = get_free_bee_id(preferred_trait)
     if bee_id == -1:
         return {}
-    var bee: Dictionary = _bee_lookup.get(bee_id, {})
-    if bee.is_empty():
+    if not reserve_bee(bee_id):
         return {}
-    bee["status"] = BEE_STATUS_TASK
-    _emit_bees_changed()
-    return {"id": bee_id, "bee": bee.duplicate(true)}
+    return {"id": bee_id, "bee": get_bee_by_id(bee_id)}
 
 func release_bee_from_task(bee_id: int) -> void:
+    release_bee(bee_id)
+
+func release_bee(bee_id: int) -> void:
+    if bee_id <= 0:
+        return
     if not _bee_lookup.has(bee_id):
         return
     var bee: Dictionary = _bee_lookup[bee_id]
+    if bee.is_empty():
+        return
     bee["status"] = BEE_STATUS_IDLE
+    _bee_lookup[bee_id] = bee
+    bees[bee_id] = bee
     _emit_bees_changed()
 
 func get_bee_by_id(bee_id: int) -> Dictionary:

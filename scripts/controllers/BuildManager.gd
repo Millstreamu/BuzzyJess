@@ -59,7 +59,7 @@ func request_build(cell_id: int, cell_type: StringName) -> bool:
             return false
     if is_existing_empty:
         _complete_build(cell_id, cell_type)
-        Events.cell_built.emit(cell_id, cell_type)
+        Events.cell_built.emit(cell_id)
         return true
     if is_brood:
         var build_seconds: float = ConfigDB.get_cell_build_seconds(cell_type)
@@ -82,7 +82,7 @@ func request_build(cell_id: int, cell_type: StringName) -> bool:
             _active_builds.erase(cell_id)
             _complete_build(cell_id, cell_type)
             emit_signal("build_finished", cell_id)
-            Events.cell_built.emit(cell_id, cell_type)
+            Events.cell_built.emit(cell_id)
             Events.brood_built.emit(cell_id)
         var success_task: bool = WorkerTasks.run_build_or_repair(cell_id, build_seconds, bee_id, false, on_done)
         if not success_task:
@@ -108,7 +108,7 @@ func request_build(cell_id: int, cell_type: StringName) -> bool:
         emit_signal("build_started", cell_id)
         _complete_build(cell_id, cell_type)
         emit_signal("build_finished", cell_id)
-        Events.cell_built.emit(cell_id, cell_type)
+        Events.cell_built.emit(cell_id)
         return true
     var timer: SceneTreeTimer = get_tree().create_timer(duration)
     if timer == null:
@@ -123,7 +123,7 @@ func request_build(cell_id: int, cell_type: StringName) -> bool:
         _active_builds.erase(cell_id)
         _complete_build(cell_id, cell_type)
         emit_signal("build_finished", cell_id)
-        Events.cell_built.emit(cell_id, cell_type)
+        Events.cell_built.emit(cell_id)
     , CONNECT_ONE_SHOT)
     emit_signal("build_started", cell_id)
     return true

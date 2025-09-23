@@ -463,6 +463,12 @@ func get_cell_cost(cell_type: StringName) -> Dictionary:
         return parsed
     return {}
 
+func get_cell_build_task(cell_type: StringName) -> Dictionary:
+    return _parse_task_config(String(cell_type), "build")
+
+func get_cell_repair_task(cell_type: StringName) -> Dictionary:
+    return _parse_task_config(String(cell_type), "repair")
+
 func get_cell_requires_bee(cell_type: StringName) -> bool:
     var def: Dictionary = _cell_defs.get(String(cell_type), {})
     var value: Variant = def.get("requires_bee", false)
@@ -518,6 +524,46 @@ func get_cell_num(cell_type: StringName, key: String, default_value: float = 0.0
 
 func has_cell_type(cell_type: StringName) -> bool:
     return _cell_defs.has(String(cell_type))
+
+func _parse_task_config(cell_type: String, key: String) -> Dictionary:
+    var def: Dictionary = _cell_defs.get(cell_type, {})
+    if def.is_empty():
+        return {}
+    var task_value: Variant = def.get(key, {})
+    if typeof(task_value) != TYPE_DICTIONARY:
+        return {}
+    var task: Dictionary = {}
+    var cost_value: Variant = task_value.get("cost", {})
+    if typeof(cost_value) == TYPE_DICTIONARY:
+        var cost: Dictionary = {}
+        for resource in cost_value.keys():
+            var amount: Variant = cost_value.get(resource, 0)
+            if typeof(amount) == TYPE_FLOAT or typeof(amount) == TYPE_INT:
+                cost[StringName(String(resource))] = int(round(float(amount)))
+        if not cost.is_empty():
+            task["cost"] = cost
+        else:
+            task["cost"] = {}
+    else:
+        task["cost"] = {}
+    var requires_bee_value: Variant = task_value.get("requires_bee", false)
+    if typeof(requires_bee_value) == TYPE_BOOL:
+        task["requires_bee"] = requires_bee_value
+    elif typeof(requires_bee_value) == TYPE_INT:
+        task["requires_bee"] = int(requires_bee_value) != 0
+    else:
+        task["requires_bee"] = false
+    var seconds_value: Variant = task_value.get("seconds", 0.0)
+    if typeof(seconds_value) == TYPE_FLOAT or typeof(seconds_value) == TYPE_INT:
+        task["seconds"] = max(0.0, float(seconds_value))
+    else:
+        task["seconds"] = 0.0
+    var bonus_value: Variant = task_value.get("trait_construction_bonus", 0.0)
+    if typeof(bonus_value) == TYPE_FLOAT or typeof(bonus_value) == TYPE_INT:
+        task["trait_construction_bonus"] = max(0.0, float(bonus_value))
+    else:
+        task["trait_construction_bonus"] = 0.0
+    return task
 
 func is_cell_buildable(cell_type: StringName) -> bool:
     var def: Dictionary = _cell_defs.get(String(cell_type), {})

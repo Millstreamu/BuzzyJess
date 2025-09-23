@@ -71,6 +71,12 @@ func _ready() -> void:
             _build_manager.build_finished.connect(_on_cell_build_finished)
     if not Events.cell_built.is_connected(_on_cell_built):
         Events.cell_built.connect(_on_cell_built)
+    if not Events.task_started.is_connected(_on_task_started):
+        Events.task_started.connect(_on_task_started)
+    if not Events.task_finished.is_connected(_on_task_finished):
+        Events.task_finished.connect(_on_task_finished)
+    if not Events.cell_repaired.is_connected(_on_cell_repaired):
+        Events.cell_repaired.connect(_on_cell_repaired)
     if not Events.assignment_changed.is_connected(_on_assignment_changed):
         Events.assignment_changed.connect(_on_assignment_changed)
     if not Events.production_tick.is_connected(_on_production_tick):
@@ -404,7 +410,28 @@ func _on_cell_build_finished(cell_id: int) -> void:
     _building_progress.erase(cell_id)
     _add_available_neighbors(cell_id)
 
-func _on_cell_built(_cell_id: int, _cell_type: StringName) -> void:
+func _on_task_started(cell_id: int, kind: StringName, _bee_id: int, _ends_at: float) -> void:
+    if kind != StringName("build") and kind != StringName("repair"):
+        return
+    _set_cell_state(cell_id, BuildState.BUILDING)
+    _building_progress[cell_id] = 0.0
+    queue_redraw()
+
+func _on_task_finished(cell_id: int, kind: StringName, _bee_id: int, success: bool) -> void:
+    if kind != StringName("build") and kind != StringName("repair"):
+        return
+    _building_progress.erase(cell_id)
+    if success:
+        _set_cell_state(cell_id, BuildState.BUILT)
+        _add_available_neighbors(cell_id)
+    else:
+        _set_cell_state(cell_id, BuildState.AVAILABLE)
+    queue_redraw()
+
+func _on_cell_built(_cell_id: int) -> void:
+    queue_redraw()
+
+func _on_cell_repaired(_cell_id: int) -> void:
     queue_redraw()
 
 func _on_assignment_changed(_cell_id: int, _bee_id: int) -> void:
