@@ -46,6 +46,15 @@ static func get_task_timer(cell_id: int) -> SceneTreeTimer:
     var data: Dictionary = _tasks[cell_id]
     return data.get("timer", null)
 
+static func get_task_duration(cell_id: int) -> float:
+    if not _tasks.has(cell_id):
+        return 0.0
+    var data: Dictionary = _tasks[cell_id]
+    var duration_value: Variant = data.get("duration", 0.0)
+    if typeof(duration_value) == TYPE_FLOAT or typeof(duration_value) == TYPE_INT:
+        return max(float(duration_value), 0.0)
+    return 0.0
+
 static func _start_task(cell_id: int, bee_id: int, duration: float, on_done: Callable) -> bool:
     var timer: SceneTreeTimer = _create_timer(max(duration, 0.0))
     if timer == null:
@@ -53,7 +62,8 @@ static func _start_task(cell_id: int, bee_id: int, duration: float, on_done: Cal
         return false
     _tasks[cell_id] = {
         "timer": timer,
-        "bee_id": bee_id
+        "bee_id": bee_id,
+        "duration": max(duration, 0.0)
     }
     timer.timeout.connect(func() -> void:
         _finish_task(cell_id, on_done)

@@ -95,7 +95,11 @@ func request_build(cell_id: int, cell_type: StringName) -> bool:
         var timer: SceneTreeTimer = WorkerTasks.get_task_timer(cell_id)
         var tracked_duration: float = build_seconds
         if timer != null:
-            tracked_duration = max(timer.wait_time, 0.0)
+            var task_duration: float = WorkerTasks.get_task_duration(cell_id)
+            if task_duration > 0.0:
+                tracked_duration = task_duration
+            else:
+                tracked_duration = max(timer.time_left, 0.0)
         _active_builds[cell_id] = {"timer": timer, "cell_type": cell_type, "duration": tracked_duration}
         emit_signal("build_started", cell_id)
         return true
