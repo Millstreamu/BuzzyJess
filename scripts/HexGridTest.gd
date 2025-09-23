@@ -291,7 +291,8 @@ func _handle_cell_interaction(cell_id: int, coord: Vector2i) -> void:
             UIFx.flash_deny()
             return
         if _queen_controller:
-            _queen_controller.open_panel()
+            var queen_world_position: Vector2 = get_cell_center_world(cell_id)
+            _queen_controller.open_panel(queen_world_position)
         else:
             UIFx.flash_deny()
         return
@@ -314,7 +315,8 @@ func _handle_cell_interaction(cell_id: int, coord: Vector2i) -> void:
         var cell_type_name: StringName = StringName(cell_type)
         if cell_type_name == StringName("Brood"):
             if _brood_controller:
-                _brood_controller.open_panel(cell_id)
+                var brood_world_position: Vector2 = get_cell_center_world(cell_id)
+                _brood_controller.open_panel(cell_id, brood_world_position)
             else:
                 UIFx.flash_deny()
             return

@@ -1,7 +1,6 @@
 extends Control
-class_name QueenFeedRadialMenu
+class_name BroodInsertRadialMenu
 
-signal feed_executed(tier: StringName)
 signal menu_closed()
 
 @export var radius: float = 96.0
@@ -14,11 +13,12 @@ signal menu_closed()
     StringName("Rare")
 ]
 
+var cell_id: int = -1
 var center: Vector2 = Vector2.ZERO
 var options: Array[StringName] = []
 var angles: Array[float] = []
 var buttons: Array[RadialOptionControl] = []
-var costs: Array[Dictionary] = []
+var counts: Array[int] = []
 var affordable: Array[bool] = []
 var selected_index: int = -1
 
@@ -31,37 +31,27 @@ var _close_tween: Tween = null
 
 class RadialOptionControl extends Control:
     var label_text: String = ""
-    var cost_text: String = ""
+    var info_text: String = ""
     var affordable: bool = true
     var icon_size: Vector2 = Vector2.ZERO
     var base_color: Color = Color(0.89, 0.7, 0.21)
     var disabled_alpha: float = 0.5
     var _flash_tween: Tween = null
 
-    func setup(label: StringName, cost: Dictionary, size: Vector2, is_affordable: bool) -> void:
+    func setup(label: StringName, info: String, size: Vector2, is_affordable: bool) -> void:
         label_text = String(label)
+        info_text = info
         icon_size = size
         affordable = is_affordable
-        cost_text = _format_cost(cost)
         mouse_filter = Control.MOUSE_FILTER_IGNORE
         custom_minimum_size = Vector2(size.x, size.y + 36)
         size = custom_minimum_size
         queue_redraw()
 
-    func update_affordable(cost: Dictionary, is_affordable: bool) -> void:
-        cost_text = _format_cost(cost)
+    func update_state(info: String, is_affordable: bool) -> void:
+        info_text = info
         affordable = is_affordable
         queue_redraw()
-
-    func _format_cost(cost: Dictionary) -> String:
-        if cost.is_empty():
-            return "Free"
-        var keys: Array = cost.keys()
-        keys.sort()
-        var parts: Array[String] = []
-        for key in keys:
-            parts.append("%s %s" % [str(cost[key]), String(key)])
-        return " / ".join(parts)
 
     func flash_unaffordable() -> void:
         if _flash_tween:
@@ -85,10 +75,10 @@ class RadialOptionControl extends Control:
             var label_size: Vector2 = font.get_string_size(label_text, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size)
             var label_pos: Vector2 = Vector2((width - label_size.x) * 0.5, icon_size.y + 16)
             draw_string(font, label_pos, label_text, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size)
-            var cost_color: Color = Color(0.4, 0.9, 0.4) if affordable else Color(0.9, 0.3, 0.3)
-            var cost_size: Vector2 = font.get_string_size(cost_text, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size)
-            var cost_pos: Vector2 = Vector2((width - cost_size.x) * 0.5, icon_size.y + 32)
-            draw_string(font, cost_pos, cost_text, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size, cost_color)
+            var info_color: Color = Color(0.4, 0.9, 0.4) if affordable else Color(0.9, 0.3, 0.3)
+            var info_size: Vector2 = font.get_string_size(info_text, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size)
+            var info_pos: Vector2 = Vector2((width - info_size.x) * 0.5, icon_size.y + 32)
+            draw_string(font, info_pos, info_text, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size, info_color)
 
 func _ready() -> void:
     visible = false
@@ -98,13 +88,14 @@ func _ready() -> void:
     selection_ring.pivot_offset = selection_ring.size * 0.5
     set_process_unhandled_input(true)
     if typeof(Events) == TYPE_OBJECT:
-        if not Events.resources_changed.is_connected(_on_resources_changed):
-            Events.resources_changed.connect(_on_resources_changed)
+        if not Events.inventory_changed.is_connected(_on_inventory_changed):
+            Events.inventory_changed.connect(_on_inventory_changed)
 
 func is_open() -> bool:
     return _is_open
 
-func open_at(world_pos: Vector2) -> void:
+func open_for_cell(p_cell_id: int, world_pos: Vector2) -> void:
+    cell_id = p_cell_id
     center = _to_canvas_position(world_pos)
     _clamp_center()
     _prepare_options()
@@ -129,34 +120,36 @@ func _prepare_options() -> void:
     options.clear()
     angles.clear()
     buttons.clear()
-    costs.clear()
+    counts.clear()
     affordable.clear()
     for child: Node in option_layer.get_children():
         if child == selection_ring:
             continue
         child.queue_free()
+    var inventory: Dictionary = InventorySystem.snapshot()
     for tier: StringName in tiers:
         options.append(tier)
-    var count: int = options.size()
-    if count == 0:
+        var item_id: StringName = StringName("Egg" + String(tier))
+        var count: int = int(inventory.get(item_id, 0))
+        counts.append(count)
+        affordable.append(count > 0)
+    var count_options: int = options.size()
+    if count_options == 0:
         selected_index = -1
         _show_empty_placeholder()
         return
     var start_angle: float = -PI * 0.5
-    for i: int in count:
-        var angle: float = start_angle + float(i) * TAU / float(count)
+    for i: int in count_options:
+        var angle: float = start_angle + float(i) * TAU / float(count_options)
         angles.append(angle)
-        var cost: Dictionary = ConfigDB.eggs_get_feed_cost(options[i])
-        costs.append(cost)
-        affordable.append(GameState.can_afford(cost))
-    selected_index = clamp(selected_index, 0, count - 1)
+    selected_index = clamp(selected_index, 0, count_options - 1)
     if selected_index < 0:
         selected_index = 0
 
 func _show_empty_placeholder() -> void:
     selection_ring.visible = false
     var label: Label = Label.new()
-    label.text = "No options"
+    label.text = "No eggs"
     label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
     label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
     label.custom_minimum_size = Vector2(200, 40)
@@ -169,9 +162,9 @@ func _layout_buttons() -> void:
     buttons.clear()
     for i: int in options.size():
         var btn: RadialOptionControl = RadialOptionControl.new()
-        var cost: Dictionary = costs[i]
-        var can_feed: bool = affordable[i]
-        btn.setup(options[i], cost, button_size, can_feed)
+        var count_text: String = "x%d" % counts[i]
+        var can_use: bool = affordable[i]
+        btn.setup(options[i], count_text, button_size, can_use)
         var offset: Vector2 = Vector2(radius, 0).rotated(angles[i]) - button_size * 0.5
         btn.position = offset
         option_layer.add_child(btn)
@@ -224,16 +217,15 @@ func _update_ring() -> void:
     selection_ring.queue_redraw()
 
 func _confirm() -> void:
-    if options.is_empty():
+    if cell_id == -1:
         close()
         return
-    if selected_index < 0 or selected_index >= options.size():
+    if options.is_empty() or selected_index < 0 or selected_index >= options.size():
         return
     var tier: StringName = options[selected_index]
-    if not EggSystem.feed_queen(tier):
+    if not EggSystem.insert_egg(cell_id, tier):
         _show_unaffordable_feedback(selected_index)
         return
-    feed_executed.emit(tier)
     close()
 
 func _show_unaffordable_feedback(idx: int) -> void:
@@ -266,6 +258,7 @@ func _on_close_finished() -> void:
     _is_open = false
     visible = false
     selection_ring.visible = false
+    cell_id = -1
     menu_closed.emit()
 
 func _to_canvas_position(world_pos: Vector2) -> Vector2:
@@ -283,18 +276,21 @@ func _clamp_center() -> void:
     center.x = clamp(center.x, margin_x, rect.size.x - margin_x)
     center.y = clamp(center.y, margin_y, rect.size.y - margin_y)
 
-func _refresh_affordability() -> void:
+func _refresh_counts() -> void:
     if options.is_empty():
         return
+    var inventory: Dictionary = InventorySystem.snapshot()
     for i: int in options.size():
-        var cost: Dictionary = ConfigDB.eggs_get_feed_cost(options[i])
-        costs[i] = cost
-        var can_feed: bool = GameState.can_afford(cost)
-        affordable[i] = can_feed
+        var item_id: StringName = StringName("Egg" + String(options[i]))
+        var count: int = int(inventory.get(item_id, 0))
+        counts[i] = count
+        var can_use: bool = count > 0
+        affordable[i] = can_use
         if i < buttons.size():
-            buttons[i].update_affordable(cost, can_feed)
+            var count_text: String = "x%d" % count
+            buttons[i].update_state(count_text, can_use)
     _update_ring()
 
-func _on_resources_changed(_snapshot: Dictionary) -> void:
+func _on_inventory_changed(_snapshot: Dictionary) -> void:
     if _is_open:
-        _refresh_affordability()
+        _refresh_counts()
