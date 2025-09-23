@@ -6,11 +6,11 @@ const SLIDE_OUT_ANIM := StringName("slide_out")
 const ROW_SCENE := preload("res://scenes/UI/InventoryRow.tscn")
 
 const OPEN_X_POSITION := 0.0
-const CLOSED_X_POSITION := -360.0
+const CLOSED_X_POSITION := 360.0
 
 @onready var anim: AnimationPlayer = $AnimationPlayer
 @onready var panel: PanelContainer = $Panel
-@onready var list_vbox: VBoxContainer = $Panel/Layout/ListScroll/VBox
+@onready var grid: GridContainer = $Panel/Layout/ListScroll/Grid
 @onready var footer_label: Label = $Panel/Layout/Footer/Hint
 
 var _rows: Dictionary = {}
@@ -67,7 +67,7 @@ func _on_inventory_changed(snap: Dictionary) -> void:
 
 func _build_static_rows() -> void:
     _rows.clear()
-    for child in list_vbox.get_children():
+    for child in grid.get_children():
         child.queue_free()
     var list := ConfigDB.get_items_list()
     for item in list:
@@ -88,7 +88,7 @@ func _build_static_rows() -> void:
         row.set_icon(icon_texture)
         row.set_name_text(String(item.get("name", String(id))))
         row.set_count(0)
-        list_vbox.add_child(row)
+        grid.add_child(row)
         _rows[id] = row
 
 func _apply_snapshot(snap: Dictionary) -> void:
