@@ -71,8 +71,8 @@ func _on_resolved(id: StringName, success: bool, power: int, defense: int) -> vo
     _slide_up_then_show(_sequence_token)
 
 func _fill_result(success: bool, power: int, defense: int) -> void:
-    result_txt.text = success ? "DEFENDED" : "DESTROYED"
-    result_txt.modulate = success ? Color(0.2, 0.8, 0.2) : Color(0.9, 0.2, 0.2)
+    result_txt.text = "DEFENDED" if success else "DESTROYED"
+    result_txt.modulate = Color(0.2, 0.8, 0.2) if success else Color(0.9, 0.2, 0.2)
     defense_val.text = "Defense %d" % defense
     power_val.text = "vs Power %d" % power
 
@@ -82,7 +82,7 @@ func _on_next_threat(id: StringName, _power: int, end_time: float) -> void:
     if id.is_empty():
         next_name.text = "—"
     else:
-        var display_name := typeof(ConfigDB) == TYPE_OBJECT ? ConfigDB.get_threat_display_name(id) : str(id).capitalize()
+        var display_name := ConfigDB.get_threat_display_name(id) if typeof(ConfigDB) == TYPE_OBJECT else str(id).capitalize()
         next_name.text = "Next: %s" % display_name
     if _next_preview_active:
         _start_next_countdown(_sequence_token)
