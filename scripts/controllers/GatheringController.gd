@@ -5,7 +5,7 @@ const HiveSystem := preload("res://scripts/systems/HiveSystem.gd")
 
 @export var panel_path: NodePath
 
-var panel: HarvestPanel = null
+var panel: OffersPanel = null
 
 func _ready() -> void:
     if panel_path != NodePath():
@@ -21,7 +21,7 @@ func toggle_panel() -> void:
         return
     if not _has_gathering_hut():
         UIFx.flash_deny()
-        UIFx.show_toast("Build a Gathering Hut to access Harvests")
+        UIFx.show_toast("Build a Gathering Hut to access offers")
         return
     panel.open()
 

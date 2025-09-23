@@ -38,8 +38,24 @@ var _cell_defs: Dictionary = {}
 var _buildable_ids: Array[StringName] = []
 var _resource_defs: Array[Dictionary] = []
 var _resource_lookup: Dictionary = {}
-var _harvest_offers: Array[Dictionary] = []
-var _harvest_lookup: Dictionary = {}
+var _offer_pools: Dictionary = {
+    "harvests": [],
+    "item_quests": []
+}
+var _offer_lookup: Dictionary = {
+    "harvests": {},
+    "item_quests": {}
+}
+var _offer_weights: Dictionary = {
+    "harvests": {},
+    "item_quests": {}
+}
+var _offer_slots: Dictionary = {
+    "harvests": 0,
+    "item_quests": 0
+}
+var _offer_tick_seconds: float = 1.0
+var _offer_delay_ratio: float = 0.05
 var _queen_defs: Array[Dictionary] = []
 var _threat_defs: Array[Dictionary] = []
 var _threat_lookup: Dictionary = {}
@@ -65,7 +81,7 @@ func _ready() -> void:
     load_cells()
     load_resources()
     load_start_values()
-    load_harvest_offers()
+    load_offers()
     load_queens()
     load_threats()
     load_boss()
@@ -192,12 +208,20 @@ func load_start_values() -> void:
             if typeof(amount) == TYPE_FLOAT or typeof(amount) == TYPE_INT:
                 _start_inventory[String(key)] = int(round(float(amount)))
 
-func load_harvest_offers() -> void:
-    _harvest_offers.clear()
-    _harvest_lookup.clear()
-    var path: String = "res://data/configs/harvests.json"
+func load_offers() -> void:
+    for key in _offer_pools.keys():
+        _offer_pools[key] = []
+    for key in _offer_lookup.keys():
+        _offer_lookup[key] = {}
+    for key in _offer_weights.keys():
+        _offer_weights[key] = {}
+    _offer_slots["harvests"] = 0
+    _offer_slots["item_quests"] = 0
+    _offer_tick_seconds = 1.0
+    _offer_delay_ratio = 0.05
+    var path: String = "res://data/configs/offers.json"
     if not FileAccess.file_exists(path):
-        push_warning("harvests.json not found at %s" % path)
+        push_warning("offers.json not found at %s" % path)
         return
     var file: FileAccess = FileAccess.open(path, FileAccess.READ)
     if file == null:
@@ -207,28 +231,75 @@ func load_harvest_offers() -> void:
     file.close()
     var parsed: Variant = JSON.parse_string(text_json)
     if typeof(parsed) != TYPE_DICTIONARY:
-        push_warning("Invalid harvests.json contents")
+        push_warning("Invalid offers.json contents")
         return
-    var list: Variant = parsed.get("harvests", [])
-    if typeof(list) != TYPE_ARRAY:
-        push_warning("Invalid harvests.json: expected 'harvests' array")
-        return
-    for entry in list:
+    _offer_pools["harvests"] = _parse_offer_pool(parsed.get("harvests_pool", []), "harvests")
+    _offer_pools["item_quests"] = _parse_offer_pool(parsed.get("item_quests_pool", []), "item_quests")
+    var weights_value: Variant = parsed.get("weights", {})
+    if typeof(weights_value) == TYPE_DICTIONARY:
+        _offer_weights["harvests"] = _parse_offer_weights(weights_value.get("harvests", {}))
+        _offer_weights["item_quests"] = _parse_offer_weights(weights_value.get("item_quests", {}))
+    var slots_value: Variant = parsed.get("slots", {})
+    if typeof(slots_value) == TYPE_DICTIONARY:
+        var harvest_slots: Variant = slots_value.get("harvests", 0)
+        var contract_slots: Variant = slots_value.get("item_quests", 0)
+        if typeof(harvest_slots) == TYPE_FLOAT or typeof(harvest_slots) == TYPE_INT:
+            _offer_slots["harvests"] = max(int(round(float(harvest_slots))), 0)
+        if typeof(contract_slots) == TYPE_FLOAT or typeof(contract_slots) == TYPE_INT:
+            _offer_slots["item_quests"] = max(int(round(float(contract_slots))), 0)
+    var tick_value: Variant = parsed.get("tick_seconds", 1.0)
+    if typeof(tick_value) == TYPE_FLOAT or typeof(tick_value) == TYPE_INT:
+        _offer_tick_seconds = max(float(tick_value), 0.1)
+    var delay_value: Variant = parsed.get("delay_ratio", 0.05)
+    if typeof(delay_value) == TYPE_FLOAT or typeof(delay_value) == TYPE_INT:
+        _offer_delay_ratio = clamp(float(delay_value), 0.0, 1.0)
+
+func _parse_offer_pool(source: Variant, kind: String) -> Array[Dictionary]:
+    var list: Array[Dictionary] = []
+    if typeof(source) != TYPE_ARRAY:
+        return list
+    for entry in source:
         if typeof(entry) != TYPE_DICTIONARY:
             continue
-        var offer: Dictionary = {}
         var id_value: Variant = entry.get("id", "")
         if typeof(id_value) != TYPE_STRING and typeof(id_value) != TYPE_STRING_NAME:
             continue
         var id_string: String = String(id_value)
-        offer["id"] = StringName(id_string)
+        if id_string.is_empty():
+            continue
+        var offer: Dictionary = {}
+        var id: StringName = StringName(id_string)
+        offer["id"] = id
+        offer["kind"] = StringName(kind)
         offer["name"] = String(entry.get("name", id_string))
         offer["required_bees"] = int(entry.get("required_bees", 0))
         offer["duration_seconds"] = float(entry.get("duration_seconds", 0))
         offer["cost"] = _parse_resource_amounts(entry.get("cost", {}))
-        offer["outputs"] = _parse_resource_amounts(entry.get("outputs", {}))
-        _harvest_offers.append(offer)
-        _harvest_lookup[id_string] = offer
+        if kind == "harvests":
+            offer["outputs"] = _parse_resource_amounts(entry.get("outputs", {}))
+        else:
+            offer["outputs"] = {}
+        if kind == "item_quests":
+            offer["reward"] = _parse_resource_amounts(entry.get("reward", {}))
+        else:
+            offer["reward"] = {}
+        list.append(offer)
+        var lookup: Dictionary = _offer_lookup.get(kind, {})
+        lookup[id_string] = offer
+        _offer_lookup[kind] = lookup
+    return list
+
+func _parse_offer_weights(source: Variant) -> Dictionary:
+    var weights: Dictionary = {}
+    if typeof(source) != TYPE_DICTIONARY:
+        return weights
+    for key in source.keys():
+        var weight_value: Variant = source.get(key, 0)
+        if typeof(weight_value) != TYPE_FLOAT and typeof(weight_value) != TYPE_INT:
+            continue
+        var id_string: String = String(key)
+        weights[id_string] = max(float(weight_value), 0.0)
+    return weights
 
 func load_queens() -> void:
     _queen_defs.clear()
@@ -750,22 +821,34 @@ func get_resource_short_name(resource_id: StringName) -> String:
         return String(def.get("short_name", ""))
     return get_resource_display_name(resource_id)
 
-func get_harvest_offers() -> Array[Dictionary]:
+func offers_pool(kind: StringName) -> Array[Dictionary]:
+    var key := String(kind)
+    var source: Variant = _offer_pools.get(key, [])
     var list: Array[Dictionary] = []
-    for contract in _harvest_offers:
-        list.append(contract.duplicate(true))
+    if typeof(source) != TYPE_ARRAY:
+        return list
+    for entry in source:
+        if typeof(entry) == TYPE_DICTIONARY:
+            list.append(entry.duplicate(true))
     return list
 
-func get_harvest_offer(contract_id: StringName) -> Dictionary:
-    var entry: Dictionary = _harvest_lookup.get(String(contract_id), {})
+func offers_get(kind: StringName, id: StringName) -> Dictionary:
+    var lookup: Dictionary = _offer_lookup.get(String(kind), {})
+    var entry: Dictionary = lookup.get(String(id), {})
     return entry.duplicate(true)
 
-func get_harvest_outputs(offer_id: StringName) -> Dictionary:
-    var offer: Dictionary = get_harvest_offer(offer_id)
-    var outputs_value: Variant = offer.get("outputs", {})
-    if typeof(outputs_value) == TYPE_DICTIONARY:
-        return outputs_value.duplicate(true)
-    return {}
+func offers_weights(kind: StringName) -> Dictionary:
+    var weights: Dictionary = _offer_weights.get(String(kind), {})
+    return weights.duplicate(true)
+
+func offers_slots(kind: StringName) -> int:
+    return int(_offer_slots.get(String(kind), 0))
+
+func offers_tick_seconds() -> float:
+    return _offer_tick_seconds
+
+func offers_delay_ratio() -> float:
+    return _offer_delay_ratio
 
 func get_queens() -> Array[Dictionary]:
     var list: Array[Dictionary] = []

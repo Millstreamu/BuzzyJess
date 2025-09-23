@@ -6,7 +6,9 @@ const DEFAULT_QUEEN_MODIFIERS := {
     "brood_extra_bees": 0,
     "harvest_bee_cost_delta": 0,
     "harvest_bee_cost_min": 1,
-    "honey_vat_refund_nectar_common": 0
+    "honey_vat_refund_nectar_common": 0,
+    "harvest_slots_bonus": 0,
+    "contract_slots_bonus": 0
 }
 
 var resources: Dictionary = {}
@@ -482,6 +484,16 @@ func get_harvest_bee_requirement(base_required_bees: int) -> int:
     var required: int = base_required_bees + delta
     required = max(minimum, required)
     return max(required, 0)
+
+func current_harvest_slots() -> int:
+    var base: int = ConfigDB.offers_slots(StringName("harvests"))
+    var bonus: int = int(modifiers.get("harvest_slots_bonus", DEFAULT_QUEEN_MODIFIERS["harvest_slots_bonus"]))
+    return max(base + bonus, 0)
+
+func current_contract_slots() -> int:
+    var base: int = ConfigDB.offers_slots(StringName("item_quests"))
+    var bonus: int = int(modifiers.get("contract_slots_bonus", DEFAULT_QUEEN_MODIFIERS["contract_slots_bonus"]))
+    return max(base + bonus, 0)
 
 func _get_total_assigned_gatherers() -> int:
     var total: int = 0

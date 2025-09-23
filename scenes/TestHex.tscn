@@ -9,7 +9,8 @@
 [ext_resource type="PackedScene" path="res://scenes/UI/AssignBeePanel.tscn" id="5"]
 [ext_resource type="PackedScene" path="res://scenes/UI/ResourcesPanel.tscn" id="6"]
 [ext_resource type="Script" path="res://scripts/controllers/GatheringController.gd" id="7"]
-[ext_resource type="PackedScene" path="res://scenes/UI/HarvestPanel.tscn" id="8"]
+[ext_resource type="PackedScene" path="res://scenes/UI/OffersPanel.tscn" id="8"]
+[ext_resource type="PackedScene" path="res://scenes/UI/ActiveJobsHud.tscn" id="18"]
 [ext_resource type="Script" path="res://scripts/controllers/BuildManager.gd" id="9"]
 [ext_resource type="Resource" path="res://resources/build/BuildConfig.tres" id="10"]
 [ext_resource type="Script" path="res://scripts/controllers/QueenController.gd" id="11"]
@@ -35,7 +36,7 @@ panel_path = NodePath("../CanvasLayer/AssignBeePanel")
 
 [node name="GatheringController" type="Node" parent="."]
 script = ExtResource("7")
-panel_path = NodePath("../CanvasLayer/HarvestPanel")
+panel_path = NodePath("../CanvasLayer/OffersPanel")
 
 [node name="QueenController" type="Node" parent="."]
 script = ExtResource("11")
@@ -58,7 +59,7 @@ visible = false
 [node name="AssignBeePanel" parent="CanvasLayer" instance=ExtResource("5")]
 visible = false
 
-[node name="HarvestPanel" parent="CanvasLayer" instance=ExtResource("8")]
+[node name="OffersPanel" parent="CanvasLayer" instance=ExtResource("8")]
 visible = false
 
 [node name="ResourcesPanel" parent="CanvasLayer" instance=ExtResource("6")]
@@ -76,3 +77,5 @@ visible = false
 
 [node name="ThreatResolvePanel" parent="CanvasLayer" instance=ExtResource("14")]
 visible = false
+
+[node name="ActiveJobsHud" parent="CanvasLayer" instance=ExtResource("18")]
