@@ -53,7 +53,7 @@ func is_open() -> bool:
     return _is_open
 
 func _apply_panel_style() -> void:
-    var style := StyleBoxFlat.new()
+    var style: StyleBoxFlat = StyleBoxFlat.new()
     style.bg_color = Color(0.11, 0.1, 0.12, 0.92)
     style.border_color = Color(1.0, 0.77, 0.34)
     style.set_border_width_all(2)
@@ -77,9 +77,9 @@ func _rebuild_list() -> void:
         list.add_child(row)
 
 func _make_row(bee: Dictionary, eff: int, selected: bool) -> Control:
-    var container := PanelContainer.new()
+    var container: PanelContainer = PanelContainer.new()
     container.custom_minimum_size = Vector2(360, 56)
-    var style := StyleBoxFlat.new()
+    var style: StyleBoxFlat = StyleBoxFlat.new()
     style.bg_color = Color(0.22, 0.2, 0.25, 0.9)
     style.set_corner_radius_all(14)
     style.set_border_width_all(2 if selected else 1)
@@ -87,13 +87,13 @@ func _make_row(bee: Dictionary, eff: int, selected: bool) -> Control:
     container.add_theme_stylebox_override("panel", style)
     container.mouse_filter = Control.MOUSE_FILTER_IGNORE
 
-    var row := HBoxContainer.new()
+    var row: HBoxContainer = HBoxContainer.new()
     row.mouse_filter = Control.MOUSE_FILTER_IGNORE
     row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
     row.add_theme_constant_override("separation", 12)
     row.alignment = BoxContainer.ALIGNMENT_CENTER
 
-    var icon := TextureRect.new()
+    var icon: TextureRect = TextureRect.new()
     icon.custom_minimum_size = Vector2(40, 40)
     icon.texture = bee.get("icon", null)
     icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
@@ -101,18 +101,18 @@ func _make_row(bee: Dictionary, eff: int, selected: bool) -> Control:
     icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
     row.add_child(icon)
 
-    var info_box := VBoxContainer.new()
+    var info_box: VBoxContainer = VBoxContainer.new()
     info_box.mouse_filter = Control.MOUSE_FILTER_IGNORE
     info_box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
     info_box.add_theme_constant_override("separation", 4)
 
-    var name_label := Label.new()
+    var name_label: Label = Label.new()
     name_label.text = String(bee.get("display_name", "Bee"))
     name_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
     name_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
     info_box.add_child(name_label)
 
-    var trait_strip := _make_trait_strip(bee.get("traits", []))
+    var trait_strip: HBoxContainer = _make_trait_strip(bee.get("traits", []))
     if trait_strip.get_child_count() > 0:
         info_box.add_child(trait_strip)
     else:
@@ -126,16 +126,16 @@ func _make_row(bee: Dictionary, eff: int, selected: bool) -> Control:
     return container
 
 func _make_badge(efficiency: int) -> Control:
-    var badge := PanelContainer.new()
+    var badge: PanelContainer = PanelContainer.new()
     badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
-    var style := StyleBoxFlat.new()
+    var style: StyleBoxFlat = StyleBoxFlat.new()
     style.bg_color = Color(0.28, 0.45, 0.28, 0.9) if efficiency >= 0 else Color(0.6, 0.28, 0.28, 0.9)
     style.set_corner_radius_all(12)
     style.set_border_width_all(1)
     style.border_color = Color(1, 1, 1, 0.6)
     badge.add_theme_stylebox_override("panel", style)
 
-    var label := Label.new()
+    var label: Label = Label.new()
     label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
     label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
     label.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -145,27 +145,27 @@ func _make_badge(efficiency: int) -> Control:
     return badge
 
 func _make_trait_strip(traits_value: Variant) -> HBoxContainer:
-    var strip := HBoxContainer.new()
+    var strip: HBoxContainer = HBoxContainer.new()
     strip.mouse_filter = Control.MOUSE_FILTER_IGNORE
     strip.add_theme_constant_override("separation", 6)
     var traits: Array[StringName] = _normalize_traits(traits_value)
     for trait_id in traits:
-        var badge := _make_trait_badge(short_code_for(trait_id), trait_display_name(trait_id))
+        var badge: PanelContainer = _make_trait_badge(short_code_for(trait_id), trait_display_name(trait_id))
         strip.add_child(badge)
     return strip
 
 func _make_trait_badge(code: String, tooltip: String) -> PanelContainer:
-    var badge := PanelContainer.new()
+    var badge: PanelContainer = PanelContainer.new()
     badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
     badge.tooltip_text = tooltip
-    var style := StyleBoxFlat.new()
+    var style: StyleBoxFlat = StyleBoxFlat.new()
     style.bg_color = Color(0.32, 0.3, 0.42, 0.95)
     style.set_corner_radius_all(10)
     style.set_border_width_all(1)
     style.border_color = Color(1, 1, 1, 0.4)
     badge.add_theme_stylebox_override("panel", style)
 
-    var label := Label.new()
+    var label: Label = Label.new()
     label.text = code
     label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
     label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
@@ -209,7 +209,7 @@ func _as_string_name(value: Variant) -> StringName:
     if typeof(value) == TYPE_STRING_NAME:
         return value
     if typeof(value) == TYPE_STRING:
-        var s := String(value)
+        var s: String = String(value)
         if s.is_empty():
             return StringName("")
         return StringName(s)
@@ -282,7 +282,7 @@ func _play_animation(name: StringName) -> bool:
     return false
 
 func _finalize_close() -> void:
-    var was_open := _is_open
+    var was_open: bool = _is_open
     visible = false
     _is_open = false
     _closing = false
