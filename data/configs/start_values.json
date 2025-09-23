@@ -1,0 +1,13 @@
+{
+  "start_cells": 1,
+  "start_workers": 0,
+  "resources": {
+    "Honey": 1,
+    "Comb": 5,
+    "Pollen": 5,
+    "NectarCommon": 5
+  },
+  "inventory": {
+    "EggCommon": 3
+  }
+}

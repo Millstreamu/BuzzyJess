@@ -58,6 +58,7 @@ var _hover_cell_id: int = -1
 @onready var _gathering_controller: GatheringController = $GatheringController
 @onready var _build_menu: BuildRadialMenu = $CanvasLayer/BuildRadialMenu
 @onready var _resources_panel: ResourcesPanel = $CanvasLayer/ResourcesPanel
+@onready var _inventory_panel: InventoryPanel = $CanvasLayer/InventoryPanel
 @onready var _build_manager: BuildManager = $BuildManager
 @onready var _queen_controller: QueenController = $QueenController
 @onready var _brood_controller: BroodController = $BroodController
@@ -238,7 +239,15 @@ func _unhandled_input(event: InputEvent) -> void:
             viewport.set_input_as_handled()
         return
 
-    if (_build_menu and _build_menu.is_open()) or (_queen_controller and _queen_controller.is_menu_open()) or (_brood_controller and _brood_controller.is_panel_open()) or (_assign_controller and _assign_controller.is_panel_open()) or (_resources_panel and _resources_panel.is_open()) or (_gathering_controller and _gathering_controller.is_panel_open()):
+    if event.is_action_pressed("inventory_panel_toggle"):
+        if _inventory_panel:
+            _inventory_panel.toggle()
+        var viewport_inventory := get_viewport()
+        if viewport_inventory:
+            viewport_inventory.set_input_as_handled()
+        return
+
+    if (_build_menu and _build_menu.is_open()) or (_queen_controller and _queen_controller.is_menu_open()) or (_brood_controller and _brood_controller.is_panel_open()) or (_assign_controller and _assign_controller.is_panel_open()) or (_resources_panel and _resources_panel.is_open()) or (_inventory_panel and _inventory_panel.is_open()) or (_gathering_controller and _gathering_controller.is_panel_open()):
         return
 
     if event is InputEventMouseButton:

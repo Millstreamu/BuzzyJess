@@ -12,7 +12,7 @@ signal menu_closed()
 @export var eggs_per_feed: int = 1
 
 const HONEY_RESOURCE := StringName("Honey")
-const EGG_RESOURCE := StringName("Egg")
+const EGG_ITEM := StringName("EggCommon")
 
 var center: Vector2 = Vector2.ZERO
 var options: Array[int] = []
@@ -229,7 +229,7 @@ func _confirm() -> void:
         _show_unaffordable_feedback(selected_index)
         return
     if eggs_per_feed > 0:
-        GameState.adjust_resource_quantity(EGG_RESOURCE, eggs_per_feed)
+        InventorySystem.add_item(EGG_ITEM, eggs_per_feed)
     var honey_amount: int = options[selected_index]
     if typeof(Events) == TYPE_OBJECT and Events.has_signal("queen_fed"):
         Events.queen_fed.emit(honey_amount, eggs_per_feed)

@@ -19,6 +19,21 @@ const BUILDING_ASSIGNMENT_DEFAULTS := {
     "GatheringHut": {"capacity": 1, "efficiency": 2}
 }
 
+const RESOURCE_NAME_OVERRIDES := {
+    "Honey": {"display": "Honey", "short": "Honey"},
+    "Comb": {"display": "Comb", "short": "Comb"},
+    "Pollen": {"display": "Pollen", "short": "Pollen"},
+    "NectarCommon": {"display": "Common Nectar", "short": "Nectar"},
+    "NectarSweet": {"display": "Sweet Nectar", "short": "Nectar"},
+    "NectarRich": {"display": "Rich Nectar", "short": "Nectar"},
+    "PetalWhite": {"display": "White Petals", "short": "White"},
+    "PetalPink": {"display": "Pink Petals", "short": "Pink"},
+    "PetalYellow": {"display": "Yellow Petals", "short": "Yellow"},
+    "PetalRed": {"display": "Red Petals", "short": "Red"},
+    "PetalBlue": {"display": "Blue Petals", "short": "Blue"},
+    "PetalPurple": {"display": "Purple Petals", "short": "Purple"}
+}
+
 var _cell_defs: Dictionary = {}
 var _buildable_ids: Array[StringName] = []
 var _resource_defs: Array[Dictionary] = []
@@ -38,10 +53,18 @@ var _egg_bump_probs: Dictionary = {}
 var _egg_rarity_visuals: Dictionary = {}
 var _egg_traits_per_rarity: Dictionary = {}
 var _item_ids: Array[StringName] = []
+var _item_defs: Dictionary = {}
+var _item_order: Array[StringName] = []
+var _start_values: Dictionary = {}
+var _start_resources: Dictionary = {}
+var _start_inventory: Dictionary = {}
+var _start_cells: int = 0
+var _start_workers: int = 0
 
 func _ready() -> void:
     load_cells()
     load_resources()
+    load_start_values()
     load_harvest_offers()
     load_queens()
     load_threats()
@@ -102,26 +125,72 @@ func load_resources() -> void:
     if typeof(parsed) != TYPE_DICTIONARY:
         push_warning("Invalid resources.json contents")
         return
-    var list: Variant = parsed.get("resources", [])
-    if typeof(list) != TYPE_ARRAY:
-        push_warning("Invalid resources.json: expected 'resources' array")
+    var base_cap_value: Variant = parsed.get("base_caps_per_resource", 0)
+    var base_cap: int = 0
+    if typeof(base_cap_value) == TYPE_FLOAT or typeof(base_cap_value) == TYPE_INT:
+        base_cap = max(int(round(float(base_cap_value))), 0)
+    var ids_value: Variant = parsed.get("ids", [])
+    if typeof(ids_value) != TYPE_ARRAY:
+        push_warning("Invalid resources.json: expected 'ids' array")
         return
-    for entry in list:
-        if typeof(entry) != TYPE_DICTIONARY:
+    for entry in ids_value:
+        var id_string: String = String(entry)
+        if id_string.is_empty():
             continue
-        var id_value: Variant = entry.get("id", "")
-        if typeof(id_value) != TYPE_STRING:
-            continue
-        var id: StringName = StringName(String(id_value))
+        var id: StringName = StringName(id_string)
+        var name_info: Dictionary = RESOURCE_NAME_OVERRIDES.get(id_string, {})
+        var display_name: String = String(name_info.get("display", _prettify_resource_name(id_string)))
+        var short_name: String = String(name_info.get("short", display_name))
         var def := {
             "id": id,
-            "display_name": String(entry.get("display_name", String(id_value))),
-            "cap": int(entry.get("cap", 0)),
-            "initial": int(entry.get("initial", 0)),
-            "short_name": String(entry.get("short_name", String(entry.get("display_name", String(id_value)))))
+            "display_name": display_name,
+            "short_name": short_name,
+            "cap": base_cap,
+            "initial": 0
         }
         _resource_defs.append(def)
-        _resource_lookup[String(id)] = def
+        _resource_lookup[id_string] = def
+
+func load_start_values() -> void:
+    _start_values.clear()
+    _start_resources.clear()
+    _start_inventory.clear()
+    _start_cells = 0
+    _start_workers = 0
+    var path: String = "res://data/configs/start_values.json"
+    if not FileAccess.file_exists(path):
+        push_warning("start_values.json not found at %s" % path)
+        return
+    var file := FileAccess.open(path, FileAccess.READ)
+    if file == null:
+        push_warning("Failed to open %s" % path)
+        return
+    var text_json: String = file.get_as_text()
+    file.close()
+    var parsed: Variant = JSON.parse_string(text_json)
+    if typeof(parsed) != TYPE_DICTIONARY:
+        push_warning("Invalid start_values.json contents")
+        return
+    _start_values = parsed
+    var cells_value: Variant = parsed.get("start_cells", 0)
+    if typeof(cells_value) == TYPE_FLOAT or typeof(cells_value) == TYPE_INT:
+        _start_cells = max(int(round(float(cells_value))), 0)
+    var workers_value: Variant = parsed.get("start_workers", 0)
+    if typeof(workers_value) == TYPE_FLOAT or typeof(workers_value) == TYPE_INT:
+        _start_workers = max(int(round(float(workers_value))), 0)
+    var resources_value: Variant = parsed.get("resources", {})
+    if typeof(resources_value) == TYPE_DICTIONARY:
+        for key in resources_value.keys():
+            var amount: Variant = resources_value.get(key, 0)
+            if typeof(amount) == TYPE_FLOAT or typeof(amount) == TYPE_INT:
+                var id: StringName = StringName(String(key))
+                _start_resources[id] = int(round(float(amount)))
+    var inventory_value: Variant = parsed.get("inventory", {})
+    if typeof(inventory_value) == TYPE_DICTIONARY:
+        for key in inventory_value.keys():
+            var amount: Variant = inventory_value.get(key, 0)
+            if typeof(amount) == TYPE_FLOAT or typeof(amount) == TYPE_INT:
+                _start_inventory[String(key)] = int(round(float(amount)))
 
 func load_harvest_offers() -> void:
     _harvest_offers.clear()
@@ -426,6 +495,8 @@ func load_eggs() -> void:
 
 func load_items() -> void:
     _item_ids.clear()
+    _item_defs.clear()
+    _item_order.clear()
     var path: String = "res://data/configs/items.json"
     if not FileAccess.file_exists(path):
         push_warning("items.json not found at %s" % path)
@@ -440,13 +511,39 @@ func load_items() -> void:
     if typeof(parsed) != TYPE_DICTIONARY:
         push_warning("Invalid items.json contents")
         return
-    var list_value: Variant = parsed.get("ids", [])
-    if typeof(list_value) != TYPE_ARRAY:
-        push_warning("Invalid items.json: expected 'ids' array")
-        return
-    for entry in list_value:
-        if typeof(entry) == TYPE_STRING or typeof(entry) == TYPE_STRING_NAME:
-            _item_ids.append(StringName(String(entry)))
+    var items_value: Variant = parsed.get("items", [])
+    if typeof(items_value) == TYPE_ARRAY:
+        for entry in items_value:
+            if typeof(entry) != TYPE_DICTIONARY:
+                continue
+            var id_value: Variant = entry.get("id", "")
+            if typeof(id_value) != TYPE_STRING and typeof(id_value) != TYPE_STRING_NAME:
+                continue
+            var id_string: String = String(id_value)
+            if id_string.is_empty():
+                continue
+            var def: Dictionary = {}
+            def["id"] = StringName(id_string)
+            def["name"] = String(entry.get("name", id_string))
+            def["icon"] = String(entry.get("icon", ""))
+            _item_defs[id_string] = def
+    else:
+        push_warning("Invalid items.json: expected 'items' array")
+    var order_value: Variant = parsed.get("order", [])
+    if typeof(order_value) == TYPE_ARRAY:
+        for entry in order_value:
+            var id_string := String(entry)
+            if id_string.is_empty():
+                continue
+            if _item_defs.has(id_string):
+                var id: StringName = StringName(id_string)
+                if not _item_order.has(id):
+                    _item_order.append(id)
+    for key in _item_defs.keys():
+        var id: StringName = _item_defs[key].get("id", StringName(String(key)))
+        if not _item_order.has(id):
+            _item_order.append(id)
+    _item_ids = _item_order.duplicate()
 
 func get_buildable_cell_types() -> Array[StringName]:
     return _buildable_ids.duplicate()
@@ -639,8 +736,9 @@ func get_resource_cap(resource_id: StringName) -> int:
     return int(def.get("cap", 0))
 
 func get_resource_initial(resource_id: StringName) -> int:
-    var def: Dictionary = _resource_lookup.get(String(resource_id), {})
-    return int(def.get("initial", 0))
+    if _start_resources.has(resource_id):
+        return int(_start_resources[resource_id])
+    return int(_start_resources.get(String(resource_id), 0))
 
 func get_resource_display_name(resource_id: StringName) -> String:
     var def: Dictionary = _resource_lookup.get(String(resource_id), {})
@@ -721,6 +819,22 @@ func _parse_resource_amounts(value: Variant) -> Dictionary:
             result[StringName(String(key))] = int(round(float(amount)))
     return result
 
+func _prettify_resource_name(id: String) -> String:
+    if id.is_empty():
+        return id
+    var result := ""
+    var prev_was_lower := false
+    for i in id.length():
+        var code: int = id.unicode_at(i)
+        var ch: String = char(code)
+        var is_letter: bool = ch.to_lower() != ch.to_upper()
+        var is_upper: bool = is_letter and ch == ch.to_upper()
+        if i > 0 and is_upper and prev_was_lower:
+            result += " "
+        result += ch
+        prev_was_lower = is_letter and not is_upper
+    return result
+
 func eggs_get_feed_cost(tier: StringName) -> Dictionary:
     return _egg_feed_costs.get(tier, {}).duplicate(true)
 
@@ -738,4 +852,35 @@ func eggs_get_rarity_outline_color(tier: StringName) -> Color:
     return Color.WHITE
 
 func get_item_ids() -> Array[StringName]:
-    return _item_ids.duplicate()
+    return _item_order.duplicate()
+
+func get_items_list() -> Array[Dictionary]:
+    var list: Array[Dictionary] = []
+    for id in _item_order:
+        var key: String = String(id)
+        var def: Dictionary = _item_defs.get(key, {})
+        if def.is_empty():
+            continue
+        var entry: Dictionary = {}
+        entry["id"] = def.get("id", id)
+        entry["name"] = String(def.get("name", String(id)))
+        entry["icon"] = String(def.get("icon", ""))
+        list.append(entry)
+    return list
+
+func get_item_def(id: StringName) -> Dictionary:
+    var key: String = String(id)
+    var def: Dictionary = _item_defs.get(key, {})
+    return def.duplicate(true)
+
+func get_start_resources() -> Dictionary:
+    return _start_resources.duplicate(true)
+
+func get_start_inventory() -> Dictionary:
+    return _start_inventory.duplicate(true)
+
+func get_start_cells() -> int:
+    return _start_cells
+
+func get_start_workers() -> int:
+    return _start_workers

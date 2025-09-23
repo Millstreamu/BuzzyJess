@@ -185,5 +185,13 @@ Controller-first, calm real-time hive-builder roguelite. Start from a single Que
 ### items.json
 
 ```
-{ "ids":["EggCommon","EggUnique","EggRare","ThistleFlower"] }
+{
+  "items": [
+    { "id":"EggCommon", "name":"Common Egg", "icon":"res://assets/icons/egg_common.svg" },
+    { "id":"EggUnique", "name":"Unique Egg", "icon":"res://assets/icons/egg_unique.svg" },
+    { "id":"EggRare", "name":"Rare Egg", "icon":"res://assets/icons/egg_rare.svg" },
+    { "id":"ThistleFlower", "name":"Thistle Flower", "icon":"res://assets/icons/thistle.svg" }
+  ],
+  "order":["EggCommon","EggUnique","EggRare","ThistleFlower"]
+}
 ```

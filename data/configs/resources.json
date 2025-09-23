@@ -1,12 +1,17 @@
 {
-  "resources": [
-    {"id": "Honey", "display_name": "Honey", "cap": 50, "initial": 30},
-    {"id": "Comb", "display_name": "Comb", "cap": 80, "initial": 40},
-    {"id": "Pollen", "display_name": "Pollen", "cap": 60, "initial": 30},
-    {"id": "NectarCommon", "display_name": "Common Nectar", "cap": 40, "initial": 25},
-    {"id": "PetalRed", "display_name": "Red Petals", "cap": 25, "initial": 10},
-    {"id": "Egg", "display_name": "Eggs", "short_name": "Egg", "cap": 10, "initial": 3},
-    {"id": "ThistleHerb", "display_name": "Thistle Herb", "short_name": "Thistle", "cap": 20, "initial": 0},
-    {"id": "ForestTonic", "display_name": "Forest Tonic", "short_name": "Tonic", "cap": 10, "initial": 0}
+  "base_caps_per_resource": 10,
+  "ids": [
+    "Honey",
+    "Comb",
+    "Pollen",
+    "NectarCommon",
+    "NectarSweet",
+    "NectarRich",
+    "PetalWhite",
+    "PetalPink",
+    "PetalYellow",
+    "PetalRed",
+    "PetalBlue",
+    "PetalPurple"
   ]
 }

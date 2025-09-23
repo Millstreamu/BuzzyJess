@@ -57,7 +57,7 @@ func _on_insert_pressed(tier: StringName) -> void:
     close()
 
 func _update_buttons() -> void:
-    var counts: Dictionary = InventorySystem.get_snapshot()
+    var counts: Dictionary = InventorySystem.snapshot()
     _update_button(_button_common, StringName("Common"), counts)
     _update_button(_button_unique, StringName("Unique"), counts)
     _update_button(_button_rare, StringName("Rare"), counts)

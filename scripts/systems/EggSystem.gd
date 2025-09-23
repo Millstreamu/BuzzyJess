@@ -27,7 +27,7 @@ func insert_egg(cell_id: int, tier: StringName) -> bool:
         UIFx.flash_deny()
         return false
     var egg_id: StringName = _egg_id(tier)
-    if not InventorySystem.has_item(egg_id, 1):
+    if not InventorySystem.has(egg_id, 1):
         UIFx.flash_deny()
         return false
     if not InventorySystem.remove_item(egg_id, 1):
