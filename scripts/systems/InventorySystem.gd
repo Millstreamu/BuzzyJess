@@ -1,5 +1,4 @@
 extends Node
-class_name InventorySystem
 
 var _items: Dictionary = {}
 
