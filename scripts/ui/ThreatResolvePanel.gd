@@ -48,18 +48,24 @@ func _configure_slide_animations() -> void:
         position.y = _hidden_position
     result_txt.pivot_offset = result_txt.size * 0.5
     anim_slot.pivot_offset = anim_slot.size * 0.5
-    var slide_up_anim := anim.get_animation("slide_up")
-    if slide_up_anim:
-        var track := slide_up_anim.find_track(NodePath(".:position:y"), Animation.TYPE_VALUE)
-        if track != -1:
-            slide_up_anim.track_set_key_value(track, 0, _hidden_position)
-            slide_up_anim.track_set_key_value(track, 1, _visible_position)
-    var slide_down_anim := anim.get_animation("slide_down")
-    if slide_down_anim:
-        var track_down := slide_down_anim.find_track(NodePath(".:position:y"), Animation.TYPE_VALUE)
-        if track_down != -1:
-            slide_down_anim.track_set_key_value(track_down, 0, _visible_position)
-            slide_down_anim.track_set_key_value(track_down, 1, _hidden_position)
+    if anim.has_animation("slide_up"):
+        var slide_up_anim := anim.get_animation("slide_up")
+        if slide_up_anim:
+            var track := slide_up_anim.find_track(NodePath(".:position:y"), Animation.TYPE_VALUE)
+            if track != -1:
+                slide_up_anim.track_set_key_value(track, 0, _hidden_position)
+                slide_up_anim.track_set_key_value(track, 1, _visible_position)
+    else:
+        push_warning("ThreatResolvePanel is missing 'slide_up' animation; falling back to instant show")
+    if anim.has_animation("slide_down"):
+        var slide_down_anim := anim.get_animation("slide_down")
+        if slide_down_anim:
+            var track_down := slide_down_anim.find_track(NodePath(".:position:y"), Animation.TYPE_VALUE)
+            if track_down != -1:
+                slide_down_anim.track_set_key_value(track_down, 0, _visible_position)
+                slide_down_anim.track_set_key_value(track_down, 1, _hidden_position)
+    else:
+        push_warning("ThreatResolvePanel is missing 'slide_down' animation; falling back to instant hide")
 
 func _on_resolved(id: StringName, success: bool, power: int, defense: int) -> void:
     _sequence_token += 1
@@ -91,8 +97,14 @@ func _slide_up_then_show(token: int) -> void:
     visible = true
     position.y = _hidden_position
     anim.stop()
-    anim.play("slide_up")
-    anim.queue("pulse")
+    if anim.has_animation("slide_up"):
+        anim.play("slide_up")
+        if anim.has_animation("pulse"):
+            anim.queue("pulse")
+    else:
+        position.y = _visible_position
+        if anim.has_animation("pulse"):
+            anim.play("pulse")
     _play_placeholder_anim()
     var result_timer := get_tree().create_timer(float(hold_ms_result) / 1000.0)
     await result_timer.timeout
@@ -106,7 +118,10 @@ func _slide_up_then_show(token: int) -> void:
         if token != _sequence_token:
             return
     _next_preview_active = false
-    anim.play("slide_down")
+    if anim.has_animation("slide_down"):
+        anim.play("slide_down")
+    else:
+        _hide_panel()
 
 func _start_next_countdown(token: int) -> void:
     if token != _sequence_token:
@@ -164,12 +179,15 @@ func _play_placeholder_anim() -> void:
     tween.tween_property(anim_slot, "scale", Vector2(1.05, 1.05), 0.2).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
     tween.tween_property(anim_slot, "scale", Vector2.ONE, 0.25).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN)
 
+func _hide_panel() -> void:
+    visible = false
+    position.y = _hidden_position
+    _stop_next_countdown()
+    _clear_next_box()
+
 func _on_animation_finished(name: StringName) -> void:
     if name == StringName("slide_down"):
-        visible = false
-        position.y = _hidden_position
-        _stop_next_countdown()
-        _clear_next_box()
+        _hide_panel()
 
 func _notification(what: int) -> void:
     if what == NOTIFICATION_PREDELETE:
