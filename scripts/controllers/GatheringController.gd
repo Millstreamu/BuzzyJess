@@ -37,7 +37,7 @@ func _on_panel_closed() -> void:
 
 func _has_gathering_hut() -> bool:
     var cells: Dictionary = HiveSystem.get_cells()
-    for entry in cells.values():
+    for entry: Dictionary in cells.values():
         if String(entry.get("type", "")) == "GatheringHut":
             return true
     return false
