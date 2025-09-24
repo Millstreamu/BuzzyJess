@@ -18,14 +18,14 @@ func _ready() -> void:
     _refill_all()
 
 func get_visible(kind: StringName) -> Array[Dictionary]:
-    var source: Array[Dictionary] = kind == StringName("harvests") ? visible_harvests : visible_contracts
+    var source: Array[Dictionary] = visible_harvests if kind == StringName("harvests") else visible_contracts
     var list: Array[Dictionary] = []
     for entry in source:
         list.append(entry.duplicate(true))
     return list
 
 func is_visible(kind: StringName, id: StringName) -> bool:
-    var source: Array[Dictionary] = kind == StringName("harvests") ? visible_harvests : visible_contracts
+    var source: Array[Dictionary] = visible_harvests if kind == StringName("harvests") else visible_contracts
     for entry in source:
         if StringName(entry.get("id", StringName(""))) == id:
             return true
@@ -39,8 +39,8 @@ func refresh_all() -> void:
 
 func refill_one(kind: StringName, used_id: StringName) -> void:
     _record_last_id(kind, used_id)
-    var desired: int = kind == StringName("harvests") ? GameState.current_harvest_slots() : GameState.current_contract_slots()
-    var list: Array[Dictionary] = kind == StringName("harvests") ? visible_harvests : visible_contracts
+    var desired: int = GameState.current_harvest_slots() if kind == StringName("harvests") else GameState.current_contract_slots()
+    var list: Array[Dictionary] = visible_harvests if kind == StringName("harvests") else visible_contracts
     for i in range(list.size() - 1, -1, -1):
         if StringName(list[i].get("id", StringName(""))) == used_id:
             list.remove_at(i)
@@ -80,7 +80,7 @@ func _refill_all() -> void:
 func _emit_refresh(kind: StringName) -> void:
     if typeof(Events) != TYPE_OBJECT:
         return
-    var list: Array[Dictionary] = kind == StringName("harvests") ? visible_harvests : visible_contracts
+    var list: Array[Dictionary] = visible_harvests if kind == StringName("harvests") else visible_contracts
     var snapshot: Array[Dictionary] = []
     for entry in list:
         snapshot.append(entry.duplicate(true))
@@ -146,7 +146,7 @@ func _record_last_id(kind: StringName, id: StringName) -> void:
 
 func _current_ids(kind: StringName) -> Array[StringName]:
     var ids: Array[StringName] = []
-    var list: Array[Dictionary] = kind == StringName("harvests") ? visible_harvests : visible_contracts
+    var list: Array[Dictionary] = visible_harvests if kind == StringName("harvests") else visible_contracts
     for entry in list:
         var id: StringName = entry.get("id", StringName(""))
         if id != StringName(""):
