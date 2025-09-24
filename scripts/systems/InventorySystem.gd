@@ -47,6 +47,21 @@ func count(id: StringName) -> int:
 func has(id: StringName, qty: int = 1) -> bool:
     return count(id) >= qty
 
+func has_all(requirements: Dictionary) -> bool:
+    if requirements.is_empty():
+        return true
+    for key in requirements.keys():
+        var item_id: StringName = key if typeof(key) == TYPE_STRING_NAME else StringName(String(key))
+        var amount_value: Variant = requirements.get(key, 0)
+        var amount: int = 0
+        if typeof(amount_value) == TYPE_FLOAT or typeof(amount_value) == TYPE_INT:
+            amount = int(round(float(amount_value)))
+        if amount <= 0:
+            continue
+        if count(item_id) < amount:
+            return false
+    return true
+
 func snapshot() -> Dictionary:
     return _items.duplicate(true)
 

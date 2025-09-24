@@ -197,3 +197,56 @@ func _snapshot(job: Dictionary) -> Dictionary:
     snap["delivered"] = job.get("delivered", {}).duplicate(true)
     snap["required"] = job.get("required", 0)
     return snap
+
+func apply_boost(effect: Dictionary) -> bool:
+    if effect.is_empty():
+        return false
+    var mode: String = String(effect.get("mode", ""))
+    match mode:
+        "replenish_pct":
+            var value_var: Variant = effect.get("value", 0.0)
+            var pct: float = 0.0
+            if typeof(value_var) == TYPE_FLOAT or typeof(value_var) == TYPE_INT:
+                pct = float(value_var)
+            if pct <= 0.0:
+                return false
+            var applied: bool = false
+            for key in _jobs.keys():
+                var job: Dictionary = _jobs[key]
+                var outputs_value: Variant = job.get("outputs", {})
+                if typeof(outputs_value) != TYPE_DICTIONARY:
+                    continue
+                var outputs: Dictionary = outputs_value.duplicate(true)
+                var accum_value: Variant = job.get("accum", {})
+                var accum: Dictionary = accum_value.duplicate(true) if typeof(accum_value) == TYPE_DICTIONARY else {}
+                var updated: bool = false
+                for res_key in outputs.keys():
+                    var current_value: Variant = outputs.get(res_key, 0)
+                    var current_total: float = 0.0
+                    if typeof(current_value) == TYPE_FLOAT or typeof(current_value) == TYPE_INT:
+                        current_total = float(current_value)
+                    if current_total <= 0.0:
+                        continue
+                    var new_total_float: float = current_total * (1.0 + pct)
+                    var new_total: int = int(round(new_total_float))
+                    if new_total <= int(round(current_total)):
+                        new_total = int(round(current_total)) + 1
+                    outputs[res_key] = new_total
+                    if not accum.is_empty():
+                        var acc_value: Variant = accum.get(res_key, 0.0)
+                        var prev_acc: float = 0.0
+                        if typeof(acc_value) == TYPE_FLOAT or typeof(acc_value) == TYPE_INT:
+                            prev_acc = float(acc_value)
+                        if current_total > 0.0:
+                            var ratio: float = float(new_total) / max(current_total, 0.0001)
+                            accum[res_key] = prev_acc * ratio
+                    updated = true
+                if updated:
+                    job["outputs"] = outputs
+                    if not accum.is_empty():
+                        job["accum"] = accum
+                    _jobs[key] = job
+                    applied = true
+            return applied
+        _:
+            return false

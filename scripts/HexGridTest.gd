@@ -52,6 +52,7 @@ var _cell_type_colors: Dictionary = {
 var _cell_states: Dictionary = {}
 var _building_progress: Dictionary = {}
 var _hover_cell_id: int = -1
+var _abilities_unlocked: bool = false
 
 @onready var _build_controller: BuildController = $BuildController
 @onready var _assign_controller: AssignController = $AssignController
@@ -59,9 +60,11 @@ var _hover_cell_id: int = -1
 @onready var _build_menu: BuildRadialMenu = $CanvasLayer/BuildRadialMenu
 @onready var _resources_panel: ResourcesPanel = $CanvasLayer/ResourcesPanel
 @onready var _inventory_panel: InventoryPanel = $CanvasLayer/InventoryPanel
+@onready var _abilities_panel: AbilitiesPanel = $CanvasLayer/AbilitiesPanel
 @onready var _build_manager: BuildManager = $BuildManager
 @onready var _queen_controller: QueenController = $QueenController
 @onready var _brood_controller: BroodController = $BroodController
+@onready var _candle_radial: RadialCandleHall = $CanvasLayer/RadialCandleHall
 
 func _ready() -> void:
     _generate_grid()
@@ -92,6 +95,10 @@ func _ready() -> void:
         Events.queen_fed.connect(_on_queen_fed)
     if not Events.bee_hatched.is_connected(_on_bee_hatched):
         Events.bee_hatched.connect(_on_bee_hatched)
+    if not Events.abilities_unlocked.is_connected(_on_abilities_unlocked):
+        Events.abilities_unlocked.connect(_on_abilities_unlocked)
+    if typeof(CandleHallSystem) == TYPE_OBJECT and CandleHallSystem.unlocked():
+        _abilities_unlocked = true
     queue_redraw()
     var viewport := get_viewport()
     if viewport:
@@ -223,7 +230,18 @@ func _find_cell_at_point(point: Vector2) -> int:
 func _unhandled_input(event: InputEvent) -> void:
     if _queen_select_active:
         return
+    if event.is_action_pressed("abilities_panel_toggle"):
+        _close_candle_radial()
+        var viewport_abilities := get_viewport()
+        if _abilities_unlocked and _abilities_panel:
+            _abilities_panel.toggle()
+        else:
+            UIFx.flash_deny()
+        if viewport_abilities:
+            viewport_abilities.set_input_as_handled()
+        return
     if event.is_action_pressed("gather_panel_toggle"):
+        _close_candle_radial()
         if _gathering_controller:
             _gathering_controller.toggle_panel()
         var viewport_toggle := get_viewport()
@@ -232,6 +250,7 @@ func _unhandled_input(event: InputEvent) -> void:
         return
 
     if event.is_action_pressed("resources_panel_toggle"):
+        _close_candle_radial()
         if _resources_panel:
             _resources_panel.toggle()
         var viewport := get_viewport()
@@ -240,6 +259,7 @@ func _unhandled_input(event: InputEvent) -> void:
         return
 
     if event.is_action_pressed("inventory_panel_toggle"):
+        _close_candle_radial()
         if _inventory_panel:
             _inventory_panel.toggle()
         var viewport_inventory := get_viewport()
@@ -247,7 +267,7 @@ func _unhandled_input(event: InputEvent) -> void:
             viewport_inventory.set_input_as_handled()
         return
 
-    if (_build_menu and _build_menu.is_open()) or (_queen_controller and _queen_controller.is_menu_open()) or (_brood_controller and _brood_controller.is_panel_open()) or (_assign_controller and _assign_controller.is_panel_open()) or (_resources_panel and _resources_panel.is_open()) or (_inventory_panel and _inventory_panel.is_open()) or (_gathering_controller and _gathering_controller.is_panel_open()):
+    if (_build_menu and _build_menu.is_open()) or (_queen_controller and _queen_controller.is_menu_open()) or (_brood_controller and _brood_controller.is_panel_open()) or (_assign_controller and _assign_controller.is_panel_open()) or (_resources_panel and _resources_panel.is_open()) or (_inventory_panel and _inventory_panel.is_open()) or (_gathering_controller and _gathering_controller.is_panel_open()) or (_abilities_panel and _abilities_panel.is_open()) or (_candle_radial and _candle_radial.is_open()):
         return
 
     if event is InputEventMouseButton:
@@ -286,6 +306,7 @@ func _handle_confirm() -> void:
     _handle_cell_interaction(cell_id, _selection)
 
 func _handle_cell_interaction(cell_id: int, coord: Vector2i) -> void:
+    _close_candle_radial()
     if cell_id == _queen_cell_id:
         if GameState.queen_id == StringName(""):
             UIFx.flash_deny()
@@ -320,11 +341,25 @@ func _handle_cell_interaction(cell_id: int, coord: Vector2i) -> void:
             else:
                 UIFx.flash_deny()
             return
+        if cell_type_name == StringName("CandleHall"):
+            if _candle_radial:
+                var hall_world_position: Vector2 = get_cell_center_world(cell_id)
+                _candle_radial.open_for_cell(cell_id, hall_world_position)
+            else:
+                UIFx.flash_deny()
+            return
         if not ConfigDB.is_cell_assignable(cell_type_name):
             UIFx.flash_deny()
             return
         if _assign_controller:
             _assign_controller.open_panel(cell_id)
+
+func _close_candle_radial() -> void:
+    if _candle_radial and _candle_radial.is_open():
+        _candle_radial.close()
+
+func _on_abilities_unlocked() -> void:
+    _abilities_unlocked = true
 
 func _draw_bee_icons(center: Vector2, icons: Array) -> void:
     if icons.is_empty():

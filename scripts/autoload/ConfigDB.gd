@@ -76,6 +76,9 @@ var _start_resources: Dictionary = {}
 var _start_inventory: Dictionary = {}
 var _start_cells: int = 0
 var _start_workers: int = 0
+var _abilities_cfg: Dictionary = {}
+var _abilities_pool: Array[Dictionary] = []
+var _abilities_lookup: Dictionary = {}
 
 func _ready() -> void:
     load_cells()
@@ -88,6 +91,7 @@ func _ready() -> void:
     load_traits()
     load_eggs()
     load_items()
+    load_abilities()
 
 func load_cells() -> void:
     _cell_defs.clear()
@@ -616,6 +620,109 @@ func load_items() -> void:
             _item_order.append(id)
     _item_ids = _item_order.duplicate()
 
+func load_abilities() -> void:
+    _abilities_cfg.clear()
+    _abilities_pool.clear()
+    _abilities_lookup.clear()
+    var path := "res://data/configs/abilities.json"
+    if not FileAccess.file_exists(path):
+        push_warning("abilities.json not found at %s" % path)
+        return
+    var file := FileAccess.open(path, FileAccess.READ)
+    if file == null:
+        push_warning("Failed to open %s" % path)
+        return
+    var text := file.get_as_text()
+    file.close()
+    var parsed: Variant = JSON.parse_string(text)
+    if typeof(parsed) != TYPE_DICTIONARY:
+        push_warning("Invalid abilities.json contents")
+        return
+    var cfg: Dictionary = {}
+    var max_value: Variant = parsed.get("max_list", 0)
+    if typeof(max_value) == TYPE_FLOAT or typeof(max_value) == TYPE_INT:
+        cfg["max_list"] = max(int(round(float(max_value))), 0)
+    else:
+        cfg["max_list"] = 0
+    var ritual_value: Variant = parsed.get("ritual", {})
+    var ritual: Dictionary = {"seconds": 0.0, "comb_cost": 0}
+    if typeof(ritual_value) == TYPE_DICTIONARY:
+        var seconds_value: Variant = ritual_value.get("seconds", 0.0)
+        if typeof(seconds_value) == TYPE_FLOAT or typeof(seconds_value) == TYPE_INT:
+            ritual["seconds"] = max(float(seconds_value), 0.0)
+        var comb_value: Variant = ritual_value.get("comb_cost", 0)
+        if typeof(comb_value) == TYPE_FLOAT or typeof(comb_value) == TYPE_INT:
+            ritual["comb_cost"] = max(int(round(float(comb_value))), 0)
+    cfg["ritual"] = ritual
+    var pool_value: Variant = parsed.get("pool", [])
+    if typeof(pool_value) == TYPE_ARRAY:
+        for entry in pool_value:
+            if typeof(entry) != TYPE_DICTIONARY:
+                continue
+            var ability: Dictionary = _parse_ability_entry(entry)
+            if ability.is_empty():
+                continue
+            var id_string: String = String(ability.get("id", ""))
+            if id_string.is_empty():
+                continue
+            _abilities_pool.append(ability)
+            _abilities_lookup[id_string] = ability
+    _abilities_cfg = cfg
+
+func _parse_ability_entry(source: Dictionary) -> Dictionary:
+    var ability: Dictionary = {}
+    var id_value: Variant = source.get("id", "")
+    var id_string: String = String(id_value)
+    if id_string.is_empty():
+        return {}
+    ability["id"] = id_string
+    ability["name"] = String(source.get("name", id_string.capitalize()))
+    ability["desc"] = String(source.get("desc", ""))
+    var weight_value: Variant = source.get("weight", 1.0)
+    var weight: float = 1.0
+    if typeof(weight_value) == TYPE_FLOAT or typeof(weight_value) == TYPE_INT:
+        weight = max(float(weight_value), 0.0)
+    ability["weight"] = weight
+    ability["cost"] = _parse_ability_cost(source.get("cost", {}))
+    var effect_value: Variant = source.get("effect", {})
+    if typeof(effect_value) == TYPE_DICTIONARY:
+        ability["effect"] = effect_value.duplicate(true)
+    else:
+        ability["effect"] = {}
+    return ability
+
+func _parse_ability_cost(value: Variant) -> Dictionary:
+    var cost: Dictionary = {"resources": {}, "items": {}}
+    if typeof(value) != TYPE_DICTIONARY:
+        return cost
+    var resources_value: Variant = value.get("resources", {})
+    if typeof(resources_value) == TYPE_DICTIONARY:
+        for key in resources_value.keys():
+            var amount_value: Variant = resources_value.get(key, 0)
+            var amount: int = 0
+            if typeof(amount_value) == TYPE_FLOAT or typeof(amount_value) == TYPE_INT:
+                amount = max(int(round(float(amount_value))), 0)
+            if amount <= 0:
+                continue
+            var res_id: String = String(key)
+            if res_id.is_empty():
+                continue
+            cost["resources"][res_id] = amount
+    var items_value: Variant = value.get("items", {})
+    if typeof(items_value) == TYPE_DICTIONARY:
+        for key in items_value.keys():
+            var qty_value: Variant = items_value.get(key, 0)
+            var qty: int = 0
+            if typeof(qty_value) == TYPE_FLOAT or typeof(qty_value) == TYPE_INT:
+                qty = max(int(round(float(qty_value))), 0)
+            if qty <= 0:
+                continue
+            var item_id: String = String(key)
+            if item_id.is_empty():
+                continue
+            cost["items"][item_id] = qty
+    return cost
+
 func get_buildable_cell_types() -> Array[StringName]:
     return _buildable_ids.duplicate()
 
@@ -967,3 +1074,68 @@ func get_start_cells() -> int:
 
 func get_start_workers() -> int:
     return _start_workers
+
+func abilities_max_list() -> int:
+    return int(_abilities_cfg.get("max_list", 0))
+
+func abilities_ritual_cfg() -> Dictionary:
+    var ritual: Dictionary = _abilities_cfg.get("ritual", {})
+    if typeof(ritual) == TYPE_DICTIONARY:
+        return ritual.duplicate(true)
+    return {"seconds": 0.0, "comb_cost": 0}
+
+func abilities_pool() -> Array[Dictionary]:
+    var list: Array[Dictionary] = []
+    for entry in _abilities_pool:
+        list.append(entry.duplicate(true))
+    return list
+
+func abilities_get(id: StringName) -> Dictionary:
+    var key: String = String(id)
+    if key.is_empty():
+        return {}
+    var entry: Dictionary = _abilities_lookup.get(key, {})
+    return entry.duplicate(true)
+
+func abilities_pick_random(exclude_ids: Array = []) -> Dictionary:
+    if _abilities_pool.is_empty():
+        return {}
+    var exclude: Dictionary = {}
+    for value in exclude_ids:
+        var id_string: String = String(value)
+        if id_string.is_empty():
+            continue
+        exclude[id_string] = true
+    var candidates: Array[Dictionary] = []
+    var total_weight: float = 0.0
+    for entry in _abilities_pool:
+        var id_string: String = String(entry.get("id", ""))
+        if id_string.is_empty():
+            continue
+        if exclude.has(id_string):
+            continue
+        var weight_value: Variant = entry.get("weight", 0.0)
+        var weight: float = 0.0
+        if typeof(weight_value) == TYPE_FLOAT or typeof(weight_value) == TYPE_INT:
+            weight = max(float(weight_value), 0.0)
+        if weight <= 0.0:
+            continue
+        candidates.append({"entry": entry, "weight": weight})
+        total_weight += weight
+    if candidates.is_empty() or total_weight <= 0.0:
+        return {}
+    var rng := RandomNumberGenerator.new()
+    rng.randomize()
+    var roll: float = rng.randf_range(0.0, total_weight)
+    var accum: float = 0.0
+    for candidate in candidates:
+        accum += float(candidate.get("weight", 0.0))
+        if roll <= accum:
+            var picked: Variant = candidate.get("entry", {})
+            if typeof(picked) == TYPE_DICTIONARY:
+                return picked.duplicate(true)
+            break
+    var fallback: Variant = candidates.back().get("entry", {})
+    if typeof(fallback) == TYPE_DICTIONARY:
+        return fallback.duplicate(true)
+    return {}

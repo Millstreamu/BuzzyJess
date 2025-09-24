@@ -1,5 +1,5 @@
 
-[gd_scene load_steps=17 format=3]
+[gd_scene load_steps=19 format=3]
 
 
 [ext_resource type="Script" path="res://scripts/HexGridTest.gd" id="1"]
@@ -20,6 +20,8 @@
 [ext_resource type="Script" path="res://scripts/controllers/BroodController.gd" id="15"]
 [ext_resource type="PackedScene" path="res://scenes/UI/BroodInsertRadialMenu.tscn" id="16"]
 [ext_resource type="PackedScene" path="res://scenes/UI/InventoryPanel.tscn" id="17"]
+[ext_resource type="PackedScene" path="res://scenes/UI/AbilitiesPanel.tscn" id="19"]
+[ext_resource type="PackedScene" path="res://scenes/UI/RadialCandleHall.tscn" id="20"]
 
 
 [node name="TestHex" type="Node2D"]
@@ -72,6 +74,11 @@ visible = false
 visible = false
 
 [node name="InventoryPanel" parent="CanvasLayer" instance=ExtResource("17")]
+
+[node name="AbilitiesPanel" parent="CanvasLayer" instance=ExtResource("19")]
+visible = false
+
+[node name="RadialCandleHall" parent="CanvasLayer" instance=ExtResource("20")]
 
 [node name="ThreatBanner" parent="CanvasLayer" instance=ExtResource("13")]
 

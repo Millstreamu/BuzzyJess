@@ -137,10 +137,14 @@ func _process_group_tick(group_id: int) -> void:
     for resource_id in produces.keys():
         var base_amount: float = float(produces[resource_id])
         var amount_float: float = base_amount * output_factor * float(assigned_count) + efficiency_sum
+        var res_id: StringName = resource_id if typeof(resource_id) == TYPE_STRING_NAME else StringName(String(resource_id))
+        var buff_target: StringName = StringName("%sProduction" % String(res_id))
+        var mult: float = BuffsSystem.get_mult(buff_target) if typeof(BuffsSystem) == TYPE_OBJECT else 1.0
+        if mult > 0.0:
+            amount_float *= mult
         var amount: int = int(floor(amount_float))
         if amount <= 0:
             continue
-        var res_id: StringName = resource_id if typeof(resource_id) == TYPE_STRING_NAME else StringName(String(resource_id))
         if GameState.can_add(res_id, amount):
             GameState.add_resource(res_id, amount)
             Events.production_tick.emit(cell_id, res_id, amount)
