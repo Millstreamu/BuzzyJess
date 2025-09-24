@@ -4,7 +4,3 @@
 
 [resource]
 script = ExtResource("1")
-cost_honey = 5
-cost_comb = 1
-requires_free_bee = false
-build_time_sec = 3.0

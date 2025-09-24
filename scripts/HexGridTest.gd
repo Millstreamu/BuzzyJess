@@ -128,7 +128,7 @@ func _generate_grid() -> void:
     _queen_cell_id = queen_id
     HiveSystem.set_center_cell(queen_id)
     _set_cell_state(queen_id, BuildState.BUILT)
-    _selection = queen_coord
+    _set_selection(queen_coord)
     _add_available_neighbors(queen_id)
     _update_offset()
 
@@ -196,7 +196,6 @@ func _add_available_neighbors(cell_id: int) -> void:
         queue_redraw()
 
 func _process(delta: float) -> void:
-    _update_hover_cell()
     if _build_manager == null:
         return
     var has_building := false
@@ -210,22 +209,6 @@ func _process(delta: float) -> void:
         queue_redraw()
     else:
         _building_progress.clear()
-
-func _update_hover_cell() -> void:
-    var hovered := _find_cell_at_point(get_global_mouse_position())
-    if hovered != _hover_cell_id:
-        _hover_cell_id = hovered
-        queue_redraw()
-
-func _find_cell_at_point(point: Vector2) -> int:
-    for coord in _hex_coords:
-        var cell_id: int = _cell_ids_by_coord.get(coord, -1)
-        if cell_id == -1:
-            continue
-        var polygon: PackedVector2Array = _hex_points(_get_cell_center(coord))
-        if Geometry2D.is_point_in_polygon(point, polygon):
-            return cell_id
-    return -1
 
 func _unhandled_input(event: InputEvent) -> void:
     if _queen_select_active:
@@ -270,18 +253,6 @@ func _unhandled_input(event: InputEvent) -> void:
     if (_build_menu and _build_menu.is_open()) or (_queen_controller and _queen_controller.is_menu_open()) or (_brood_controller and _brood_controller.is_panel_open()) or (_assign_controller and _assign_controller.is_panel_open()) or (_resources_panel and _resources_panel.is_open()) or (_inventory_panel and _inventory_panel.is_open()) or (_gathering_controller and _gathering_controller.is_panel_open()) or (_abilities_panel and _abilities_panel.is_open()) or (_candle_radial and _candle_radial.is_open()):
         return
 
-    if event is InputEventMouseButton:
-        var mouse_event: InputEventMouseButton = event
-        if mouse_event.button_index == MOUSE_BUTTON_LEFT and mouse_event.pressed:
-            var cell_id_click := _find_cell_at_point(mouse_event.position)
-            if cell_id_click != -1:
-                var coord: Vector2i = _coords_by_id.get(cell_id_click, Vector2i.ZERO)
-                _handle_cell_interaction(cell_id_click, coord)
-                var viewport_click := get_viewport()
-                if viewport_click:
-                    viewport_click.set_input_as_handled()
-                return
-
     if event.is_action_pressed("ui_right"):
         _try_move_selection(Vector2i(1, 0))
     elif event.is_action_pressed("ui_left"):
@@ -296,8 +267,12 @@ func _unhandled_input(event: InputEvent) -> void:
 func _try_move_selection(delta: Vector2i) -> void:
     var next_coord := _selection + delta
     if _positions.has(next_coord):
-        _selection = next_coord
-        queue_redraw()
+        _set_selection(next_coord)
+
+func _set_selection(coord: Vector2i) -> void:
+    _selection = coord
+    _hover_cell_id = _cell_ids_by_coord.get(_selection, -1)
+    queue_redraw()
 
 func _handle_confirm() -> void:
     var cell_id: int = _cell_ids_by_coord.get(_selection, -1)

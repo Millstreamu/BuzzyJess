@@ -14,6 +14,7 @@ const TRAIT_CONSTRUCTION := StringName("Construction")
 const TASK_PROGRESS_SCENE := preload("res://scenes/UI/TaskProgress.tscn")
 
 const MergeSystem := preload("res://scripts/systems/MergeSystem.gd")
+const CostPolicy := preload("res://scripts/systems/CostPolicy.gd")
 
 static var _tasks: Dictionary = {}
 
@@ -31,7 +32,7 @@ static func start_build(cell_id: int) -> bool:
     var cfg: Dictionary = ConfigDB.get_cell_build_task(HiveSystem.EMPTY_TYPE)
     if cfg.is_empty():
         return false
-    var cost: Dictionary = cfg.get("cost", {})
+    var cost: Dictionary = CostPolicy.get_empty_build_cost()
     if not cost.is_empty() and not GameState.can_spend(cost):
         return false
     var bee_id: int = GameState.get_free_bee_id()
@@ -39,7 +40,7 @@ static func start_build(cell_id: int) -> bool:
         return false
     if not GameState.reserve_bee(bee_id):
         return false
-    if not cost.is_empty() and not GameState.spend(cost):
+    if not cost.is_empty() and not CostPolicy.charge_for_empty_build():
         GameState.release_bee(bee_id)
         return false
     var base_seconds: float = float(cfg.get("seconds", 0.0))

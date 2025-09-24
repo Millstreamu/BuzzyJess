@@ -18,7 +18,7 @@ var _closed_emitted: bool = false
 @onready var cards_box: HBoxContainer = $HBoxContainer
 
 func _ready() -> void:
-    mouse_filter = Control.MOUSE_FILTER_STOP
+    mouse_filter = Control.MOUSE_FILTER_IGNORE
     focus_mode = Control.FOCUS_ALL
     set_process_unhandled_input(true)
     _populate_cards()
@@ -66,6 +66,7 @@ func _unhandled_input(event: InputEvent) -> void:
         _confirm()
         _accept()
     elif event.is_action_pressed("cancel"):
+        _cancel_selection()
         _accept()
 
 func _accept() -> void:
@@ -142,6 +143,17 @@ func _confirm() -> void:
     GameState.apply_queen_effects(effects)
     _place_queen_in_center()
     queen_confirmed.emit(GameState.queen_id)
+    hide()
+    _closed_emitted = true
+    selection_closed.emit()
+    var tree := get_tree()
+    if tree:
+        tree.paused = false
+    queue_free()
+
+func _cancel_selection() -> void:
+    if _closed_emitted:
+        return
     hide()
     _closed_emitted = true
     selection_closed.emit()

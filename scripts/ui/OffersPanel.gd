@@ -16,14 +16,23 @@ const SLIDE_OUT_ANIMATION := StringName("slide_out")
 
 var _is_open: bool = false
 var _closing: bool = false
+var _harvest_buttons: Array[Button] = []
+var _contract_buttons: Array[Button] = []
+var _focus_indices: Dictionary = {}
 
 func _ready() -> void:
     visible = false
     set_process_unhandled_input(true)
     _apply_panel_style()
     _connect_events()
+    mouse_filter = Control.MOUSE_FILTER_IGNORE
+    if panel:
+        panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+    _focus_indices = {0: 0, 1: 0}
     if anim and not anim.animation_finished.is_connected(_on_animation_finished):
         anim.animation_finished.connect(_on_animation_finished)
+    if tab_container and not tab_container.tab_changed.is_connected(_on_tab_changed):
+        tab_container.tab_changed.connect(_on_tab_changed)
     if header_label:
         header_label.text = "Harvests & Contracts"
     if footer_label:
@@ -38,6 +47,7 @@ func open() -> void:
     _refresh_lists()
     if not _play_animation(SLIDE_IN_ANIMATION):
         position.x = 0
+    _focus_current_tab()
 
 func close() -> void:
     if not _is_open or _closing:
@@ -54,8 +64,23 @@ func _unhandled_input(event: InputEvent) -> void:
         return
     if event.is_action_pressed("cancel"):
         close()
+        accept_event()
     elif event.is_action_pressed("confirm"):
-        _try_start_current_tab()
+        if not _activate_focused_button():
+            _try_start_current_tab()
+        accept_event()
+    elif event.is_action_pressed("ui_down"):
+        _move_focus(1)
+        accept_event()
+    elif event.is_action_pressed("ui_up"):
+        _move_focus(-1)
+        accept_event()
+    elif event.is_action_pressed("ui_right"):
+        _change_tab(1)
+        accept_event()
+    elif event.is_action_pressed("ui_left"):
+        _change_tab(-1)
+        accept_event()
 
 func _apply_panel_style() -> void:
     if panel == null:
@@ -112,8 +137,12 @@ func _refresh_if_open() -> void:
     _refresh_lists()
 
 func _refresh_lists() -> void:
+    _harvest_buttons.clear()
+    _contract_buttons.clear()
     _populate_list(StringName("harvests"), harvest_list)
     _populate_list(StringName("item_quests"), contract_list)
+    if _is_open:
+        _focus_current_tab()
 
 func _populate_list(kind: StringName, container: VBoxContainer) -> void:
     if container == null:
@@ -231,7 +260,6 @@ func _make_offer_content(offer: Dictionary, required_bees: int, has_bees: bool, 
 
     var button := Button.new()
     button.text = "Start"
-    button.focus_mode = Control.FOCUS_NONE
     button.disabled = not (has_bees and has_cost) or _is_offer_running(offer.get("id"), is_harvest)
     button.pressed.connect(func() -> void:
         if is_harvest:
@@ -239,6 +267,7 @@ func _make_offer_content(offer: Dictionary, required_bees: int, has_bees: bool, 
         else:
             _attempt_start_contract(offer)
     )
+    _register_offer_button(button, is_harvest)
     container.add_child(button)
 
     if button.disabled or not (has_bees and has_cost):
@@ -364,6 +393,113 @@ func _start_first_available(list_container: VBoxContainer, is_harvest: bool) -> 
                     if grand is Button and not grand.disabled:
                         grand.emit_signal("pressed")
                         return
+
+func _register_offer_button(button: Button, is_harvest: bool) -> void:
+    if button == null:
+        return
+    button.focus_mode = Control.FOCUS_ALL
+    button.mouse_filter = Control.MOUSE_FILTER_IGNORE
+    var tab_index: int = 0 if is_harvest else 1
+    if is_harvest:
+        _harvest_buttons.append(button)
+    else:
+        _contract_buttons.append(button)
+    button.focus_entered.connect(func() -> void:
+        var buttons := _button_list_for(tab_index)
+        var idx := buttons.find(button)
+        if idx >= 0:
+            _focus_indices[tab_index] = idx
+    )
+
+func _button_list_for(tab_index: int) -> Array[Button]:
+    return _harvest_buttons if tab_index == 0 else _contract_buttons
+
+func _focus_current_tab() -> void:
+    if not _is_open or tab_container == null:
+        return
+    var tab_index: int = tab_container.current_tab
+    var buttons := _button_list_for(tab_index)
+    if buttons.is_empty():
+        return
+    var start_index: int = int(_focus_indices.get(tab_index, 0))
+    _focus_from_index(tab_index, start_index)
+
+func _move_focus(delta: int) -> void:
+    if not _is_open or tab_container == null:
+        return
+    var tab_index: int = tab_container.current_tab
+    var buttons := _button_list_for(tab_index)
+    if buttons.is_empty():
+        UIFx.flash_deny()
+        return
+    var index: int = int(_focus_indices.get(tab_index, 0))
+    var count: int = buttons.size()
+    for _i in range(count):
+        index = wrapi(index + delta, 0, count)
+        var button := buttons[index]
+        if _can_focus_button(button):
+            _focus_indices[tab_index] = index
+            button.grab_focus()
+            return
+    UIFx.flash_deny()
+
+func _activate_focused_button() -> bool:
+    var button := _current_focus_button()
+    if button == null:
+        return false
+    if button.disabled:
+        UIFx.flash_deny()
+        return false
+    button.emit_signal("pressed")
+    return true
+
+func _current_focus_button() -> Button:
+    if tab_container == null:
+        return null
+    var tab_index: int = tab_container.current_tab
+    var buttons := _button_list_for(tab_index)
+    if buttons.is_empty():
+        return null
+    var index: int = int(_focus_indices.get(tab_index, 0))
+    if index < 0 or index >= buttons.size():
+        return null
+    var button := buttons[index]
+    if button != null and button.is_inside_tree():
+        return button
+    return null
+
+func _change_tab(delta: int) -> void:
+    if tab_container == null:
+        return
+    var count: int = tab_container.get_tab_count()
+    if count <= 1:
+        UIFx.flash_deny()
+        return
+    var next: int = wrapi(tab_container.current_tab + delta, 0, count)
+    if next == tab_container.current_tab:
+        return
+    tab_container.current_tab = next
+    _focus_current_tab()
+
+func _focus_from_index(tab_index: int, start_index: int) -> void:
+    var buttons := _button_list_for(tab_index)
+    if buttons.is_empty():
+        return
+    var count: int = buttons.size()
+    for offset in range(count):
+        var idx := wrapi(start_index + offset, 0, count)
+        var button := buttons[idx]
+        if _can_focus_button(button):
+            _focus_indices[tab_index] = idx
+            button.grab_focus()
+            return
+
+func _can_focus_button(button: Button) -> bool:
+    return button != null and button.visible and not button.disabled
+
+func _on_tab_changed(_tab: int) -> void:
+    if _is_open:
+        _focus_current_tab()
 
 func _play_animation(name: StringName) -> bool:
     if anim == null or not anim.has_animation(name):
