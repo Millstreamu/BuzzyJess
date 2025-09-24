@@ -31,11 +31,6 @@ func open_radial(cell_id: int, world_position: Vector2) -> void:
         current_cell_id = -1
         return
     if build_menu:
-        var include_base_cost: bool = state == BUILD_STATE_AVAILABLE
-        var base_cost: Dictionary = {}
-        if include_base_cost:
-            base_cost = _get_base_build_cost()
-        build_menu.set_base_cost(base_cost)
         build_menu.open_for_cell(cell_id, world_position)
 
 func close_menu() -> void:
@@ -44,8 +39,6 @@ func close_menu() -> void:
 
 func _on_menu_closed() -> void:
     current_cell_id = -1
-    if build_menu:
-        build_menu.set_base_cost({})
 
 func _on_build_chosen(cell_type: StringName, option_index: int) -> void:
     if current_cell_id == -1:
@@ -61,7 +54,3 @@ func _on_build_chosen(cell_type: StringName, option_index: int) -> void:
     elif build_menu:
         build_menu.show_unaffordable_feedback(option_index)
 
-func _get_base_build_cost() -> Dictionary:
-    if build_manager and build_manager.build_config:
-        return build_manager.build_config.get_cost_dictionary()
-    return {}

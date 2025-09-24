@@ -12,6 +12,8 @@ class_name RadialCandleHall
 var _cell_id: int = -1
 var _is_open: bool = false
 var _end_time: float = 0.0
+var _focus_index: int = 0
+var _focus_buttons: Array[Button] = []
 
 func _ready() -> void:
     visible = false
@@ -21,6 +23,16 @@ func _ready() -> void:
     cancel_button.pressed.connect(close)
     set_process(false)
     set_process_unhandled_input(true)
+    focus_mode = Control.FOCUS_ALL
+    _focus_buttons = []
+    if start_button:
+        start_button.focus_mode = Control.FOCUS_ALL
+        start_button.mouse_filter = Control.MOUSE_FILTER_IGNORE
+        _focus_buttons.append(start_button)
+    if cancel_button:
+        cancel_button.focus_mode = Control.FOCUS_ALL
+        cancel_button.mouse_filter = Control.MOUSE_FILTER_IGNORE
+        _focus_buttons.append(cancel_button)
     if typeof(Events) == TYPE_OBJECT:
         if not Events.resources_changed.is_connected(_on_state_changed):
             Events.resources_changed.connect(_on_state_changed)
@@ -44,6 +56,7 @@ func open_for_cell(cell_id: int, world_pos: Vector2) -> void:
     _position_option_layer(canvas_pos)
     _refresh_state()
     set_process(true)
+    _focus_first_available()
 
 func close() -> void:
     if not _is_open:
@@ -53,6 +66,7 @@ func close() -> void:
     set_process(false)
     _cell_id = -1
     _end_time = 0.0
+    _focus_index = 0
 
 func is_open() -> bool:
     return _is_open
@@ -95,6 +109,7 @@ func _refresh_state() -> void:
         return
     start_button.disabled = false
     status_label.text = ""
+    _ensure_focus_valid()
 
 func _format_time_left() -> String:
     if _end_time <= 0.0:
@@ -156,11 +171,14 @@ func _unhandled_input(event: InputEvent) -> void:
     if event.is_action_pressed("cancel"):
         close()
         accept_event()
-    elif event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
-        var rect: Rect2 = option_layer.get_global_rect()
-        if rect.has_point(event.position):
-            return
-        close()
+    elif event.is_action_pressed("confirm"):
+        if _activate_current():
+            accept_event()
+    elif event.is_action_pressed("ui_right") or event.is_action_pressed("ui_down"):
+        _move_focus(1)
+        accept_event()
+    elif event.is_action_pressed("ui_left") or event.is_action_pressed("ui_up"):
+        _move_focus(-1)
         accept_event()
 
 func _on_state_changed(_data: Variant = null) -> void:
@@ -179,4 +197,66 @@ func _on_ritual_completed(cell_id: int, _ability_id: StringName) -> void:
         return
     _end_time = 0.0
     _refresh_state()
+
+func _ensure_focus_valid() -> void:
+    if not _is_open:
+        return
+    var current := _current_focus_button()
+    if _can_focus(current):
+        current.grab_focus()
+        return
+    _focus_first_available()
+
+func _focus_first_available() -> void:
+    if not _is_open:
+        return
+    if _focus_buttons.is_empty():
+        return
+    var count := _focus_buttons.size()
+    for i in range(count):
+        var idx := (i + _focus_index) % count
+        var button := _focus_buttons[idx]
+        if _can_focus(button):
+            _focus_index = idx
+            button.grab_focus()
+            return
+    var fallback := _current_focus_button()
+    if fallback:
+        fallback.grab_focus()
+
+func _move_focus(delta: int) -> void:
+    if _focus_buttons.is_empty():
+        return
+    var count := _focus_buttons.size()
+    var idx := _focus_index
+    for _i in range(count):
+        idx = wrapi(idx + delta, 0, count)
+        var button := _focus_buttons[idx]
+        if _can_focus(button):
+            _focus_index = idx
+            button.grab_focus()
+            return
+    var current := _current_focus_button()
+    if current:
+        current.grab_focus()
+
+func _activate_current() -> bool:
+    var button := _current_focus_button()
+    if not _can_focus(button):
+        UIFx.flash_deny()
+        return false
+    button.emit_signal("pressed")
+    return true
+
+func _current_focus_button() -> Button:
+    if _focus_buttons.is_empty():
+        return null
+    _focus_index = clamp(_focus_index, 0, _focus_buttons.size() - 1)
+    var button := _focus_buttons[_focus_index]
+    if button != null and button.is_inside_tree():
+        return button
+    return null
+
+func _can_focus(button: Button) -> bool:
+    return button != null and button.visible and not button.disabled
 

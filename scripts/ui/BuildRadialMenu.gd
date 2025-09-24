@@ -17,7 +17,6 @@ var buttons: Array[RadialOptionControl] = []
 var costs: Array[Dictionary] = []
 var affordable: Array[bool] = []
 var selected_index: int = -1
-var base_cost: Dictionary = {}
 
 var _is_open: bool = false
 var _open_tween: Tween = null
@@ -139,9 +138,9 @@ func _prepare_options() -> void:
         var angle: float = start_angle + float(i) * TAU / float(count)
         angles.append(angle)
         var specialization_cost: Dictionary = ConfigDB.get_cell_cost(options[i])
-        var total_cost: Dictionary = _combine_costs(base_cost, specialization_cost)
-        costs.append(total_cost)
-        affordable.append(GameState.can_afford(total_cost))
+        var cost_copy: Dictionary = specialization_cost.duplicate(true)
+        costs.append(cost_copy)
+        affordable.append(GameState.can_afford(cost_copy))
     selected_index = clamp(selected_index, 0, count - 1)
     if selected_index < 0:
         selected_index = 0
@@ -255,7 +254,6 @@ func _on_close_finished() -> void:
     _is_open = false
     visible = false
     selection_ring.visible = false
-    base_cost = {}
     Events.build_menu_closed.emit()
     menu_closed.emit()
 
@@ -274,22 +272,5 @@ func _clamp_center() -> void:
     center.x = clamp(center.x, margin_x, rect.size.x - margin_x)
     center.y = clamp(center.y, margin_y, rect.size.y - margin_y)
 
-func set_base_cost(cost: Dictionary) -> void:
-    base_cost = cost.duplicate(true)
-
 func show_unaffordable_feedback(index: int) -> void:
     _show_unaffordable_feedback(index)
-
-func _combine_costs(a: Dictionary, b: Dictionary) -> Dictionary:
-    var combined: Dictionary = {}
-    for key in a.keys():
-        var resource: StringName = key if typeof(key) == TYPE_STRING_NAME else StringName(String(key))
-        var amount: float = float(a[key])
-        combined[resource] = float(combined.get(resource, 0.0)) + amount
-    for key in b.keys():
-        var resource_b: StringName = key if typeof(key) == TYPE_STRING_NAME else StringName(String(key))
-        var amount_b: float = float(b[key])
-        combined[resource_b] = float(combined.get(resource_b, 0.0)) + amount_b
-    for key in combined.keys():
-        combined[key] = int(round(float(combined[key])))
-    return combined
