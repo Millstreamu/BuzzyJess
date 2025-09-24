@@ -1,3 +1,12 @@
+# -----------------------------------------------------------------------------
+# File: scripts/ui/BuildRadialMenu.gd
+# Purpose: Radial UI for selecting buildings to construct on a cell
+# Depends: InputActions, CostPolicy, UIFx
+# Notes: Offers keyboard navigation with Input.get_vector mapping
+# -----------------------------------------------------------------------------
+
+## BuildRadialMenu
+## Presents build options around the selection and handles confirmation.
 extends Control
 class_name BuildRadialMenu
 
@@ -174,16 +183,16 @@ func _layout_buttons() -> void:
 func _unhandled_input(event: InputEvent) -> void:
     if not _is_open:
         return
-    if event.is_action_pressed("ui_right") or event.is_action_pressed("ui_left") or event.is_action_pressed("ui_up") or event.is_action_pressed("ui_down") or event.is_action_released("ui_right") or event.is_action_released("ui_left") or event.is_action_released("ui_up") or event.is_action_released("ui_down"):
-        var dir: Vector2 = Input.get_vector("ui_left", "ui_right", "ui_up", "ui_down")
+    if event.is_action_pressed(InputActions.UI_RIGHT) or event.is_action_pressed(InputActions.UI_LEFT) or event.is_action_pressed(InputActions.UI_UP) or event.is_action_pressed(InputActions.UI_DOWN) or event.is_action_released(InputActions.UI_RIGHT) or event.is_action_released(InputActions.UI_LEFT) or event.is_action_released(InputActions.UI_UP) or event.is_action_released(InputActions.UI_DOWN):
+        var dir: Vector2 = Input.get_vector(InputActions.UI_LEFT, InputActions.UI_RIGHT, InputActions.UI_UP, InputActions.UI_DOWN)
         if dir.length_squared() > 0.0:
             _select_dir(dir)
             accept_event()
         return
-    elif event.is_action_pressed("confirm"):
+    elif event.is_action_pressed(InputActions.CONFIRM):
         _confirm()
         accept_event()
-    elif event.is_action_pressed("cancel"):
+    elif event.is_action_pressed(InputActions.CANCEL):
         close()
         accept_event()
 

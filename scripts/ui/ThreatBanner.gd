@@ -1,3 +1,12 @@
+# -----------------------------------------------------------------------------
+# File: scripts/ui/ThreatBanner.gd
+# Purpose: Visualizes threat/boss warnings, results, and cooldown pacing
+# Depends: Events, ConfigDB, GameState timing helpers
+# Notes: Maintains a small state machine to coordinate countdowns and fades
+# -----------------------------------------------------------------------------
+
+## ThreatBanner
+## Drives the banner UI that narrates threat warnings, resolutions, and cooldowns.
 extends Control
 class_name ThreatBanner
 
@@ -43,6 +52,7 @@ func _ready() -> void:
         if not Events.game_over.is_connected(_on_game_over):
             Events.game_over.connect(_on_game_over)
 
+## Updates timers and handles delayed transitions for the small state machine.
 func _process(_delta: float) -> void:
     var now: float = Time.get_unix_time_from_system()
     match _state:
@@ -52,6 +62,7 @@ func _process(_delta: float) -> void:
         BannerState.THREAT_RESULT, BannerState.BOSS_PHASE_RESULT:
             if _result_clear_time > 0.0 and now >= _result_clear_time:
                 if _pending_cooldown > 0.0:
+                    # Cooldown waits until the post-result linger completes, avoiding abrupt swaps.
                     _begin_cooldown(_pending_cooldown)
                 else:
                     _hide_banner()

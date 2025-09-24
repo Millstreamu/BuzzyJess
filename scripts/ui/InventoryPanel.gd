@@ -1,3 +1,12 @@
+# -----------------------------------------------------------------------------
+# File: scripts/ui/InventoryPanel.gd
+# Purpose: Displays player inventory with slide-in/out transitions
+# Depends: ConfigDB, InventorySystem, IconDB, InputActions
+# Notes: Caches item icons to avoid runtime load() calls per row
+# -----------------------------------------------------------------------------
+
+## InventoryPanel
+## Handles building the inventory list UI and responding to toggle inputs.
 extends Control
 class_name InventoryPanel
 
@@ -17,6 +26,7 @@ var _rows: Dictionary = {}
 var _snapshot: Dictionary = {}
 var _is_open: bool = false
 var _closing: bool = false
+var _icon_cache: Dictionary = {}
 
 func _ready() -> void:
     visible = false
@@ -65,6 +75,7 @@ func _on_inventory_changed(snap: Dictionary) -> void:
     if _is_open and not _closing:
         _apply_snapshot(_snapshot)
 
+## Instantiates one row per configured item and primes cached icons.
 func _build_static_rows() -> void:
     _rows.clear()
     for child in grid.get_children():
@@ -78,13 +89,7 @@ func _build_static_rows() -> void:
         var row: InventoryRow = ROW_SCENE.instantiate()
         row.set_id(id)
         var icon_path: String = String(item.get("icon", ""))
-        var icon_texture: Texture2D = null
-        if not icon_path.is_empty():
-            var loaded := load(icon_path)
-            if loaded is Texture2D:
-                icon_texture = loaded
-        if icon_texture == null:
-            icon_texture = IconDB.get_icon_for(id)
+        var icon_texture: Texture2D = _get_icon_for_item(id, icon_path)
         row.set_icon(icon_texture)
         row.set_name_text(String(item.get("name", String(id))))
         row.set_count(0)
@@ -113,7 +118,7 @@ func _apply_panel_style() -> void:
 func _unhandled_input(event: InputEvent) -> void:
     if not _is_open or _closing:
         return
-    if event.is_action_pressed("cancel") or event.is_action_pressed("inventory_panel_toggle"):
+    if event.is_action_pressed(InputActions.CANCEL) or event.is_action_pressed(InputActions.INVENTORY_PANEL_TOGGLE):
         _close()
         accept_event()
 
@@ -128,3 +133,16 @@ func _finalize_close() -> void:
     _is_open = false
     _closing = false
     position.x = CLOSED_X_POSITION
+
+## Returns the icon texture for the given item, using a cache to avoid repeat loads.
+func _get_icon_for_item(id: StringName, icon_path: String) -> Texture2D:
+    if not icon_path.is_empty():
+        if _icon_cache.has(icon_path):
+            var cached: Variant = _icon_cache[icon_path]
+            if cached is Texture2D:
+                return cached
+        var loaded: Resource = ResourceLoader.load(icon_path)
+        if loaded is Texture2D:
+            _icon_cache[icon_path] = loaded
+            return loaded
+    return IconDB.get_icon_for(id)

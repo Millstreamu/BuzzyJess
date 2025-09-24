@@ -1,3 +1,12 @@
+# -----------------------------------------------------------------------------
+# File: scripts/ui/AssignBeePanel.gd
+# Purpose: Keyboard-navigable panel for assigning bees to buildings
+# Depends: UIFx, InputActions, Traits utilities
+# Notes: Slides in/out and emits assign/close signals to controllers
+# -----------------------------------------------------------------------------
+
+## AssignBeePanel
+## Renders a list of candidate bees and handles assignment confirmation.
 extends Control
 class_name AssignBeePanel
 
@@ -233,16 +242,16 @@ func _make_message_label(text: String) -> Control:
 func _unhandled_input(event: InputEvent) -> void:
     if not _is_open:
         return
-    if event.is_action_pressed("ui_down"):
+    if event.is_action_pressed(InputActions.UI_DOWN):
         _move(1)
         accept_event()
-    elif event.is_action_pressed("ui_up"):
+    elif event.is_action_pressed(InputActions.UI_UP):
         _move(-1)
         accept_event()
-    elif event.is_action_pressed("confirm"):
+    elif event.is_action_pressed(InputActions.CONFIRM):
         _confirm()
         accept_event()
-    elif event.is_action_pressed("cancel"):
+    elif event.is_action_pressed(InputActions.CANCEL):
         close()
         accept_event()
 

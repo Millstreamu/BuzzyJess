@@ -1,4 +1,14 @@
+# -----------------------------------------------------------------------------
+# File: scripts/systems/ThreatSystem.gd
+# Purpose: Schedules threats, handles warn→resolve flow, coordinates boss phases
+# Depends: ConfigDB, GameState, Events
+# Notes: Reads timings/power from data/configs/threats.json and boss.json
+# -----------------------------------------------------------------------------
+
+## ThreatSystem
+## Manages the threat lifecycle, including periodic warnings and boss encounters.
 extends Node
+class_name ThreatSystem
 
 var _rng := RandomNumberGenerator.new()
 var _tick_timer: Timer
@@ -6,6 +16,7 @@ var _threat_cfg: Dictionary = {}
 var _boss_cfg: Dictionary = {}
 var _boss_in_progress: bool = false
 
+## Initializes timers and caches config data for threat scheduling.
 func _ready() -> void:
     _rng.randomize()
     _reload_configs()
@@ -13,10 +24,12 @@ func _ready() -> void:
     if typeof(Events) == TYPE_OBJECT and not Events.game_over.is_connected(_on_game_over):
         Events.game_over.connect(_on_game_over)
 
+## Refreshes threat/boss definitions from ConfigDB.
 func _reload_configs() -> void:
     _threat_cfg = ConfigDB.get_threats_cfg()
     _boss_cfg = ConfigDB.get_boss_cfg()
 
+## Ensures the system has a ticking timer that polls for threat spawn conditions.
 func _start_tick_timer() -> void:
     if _tick_timer:
         return
@@ -27,6 +40,7 @@ func _start_tick_timer() -> void:
     _tick_timer.timeout.connect(_tick)
     add_child(_tick_timer)
 
+## Polls each second to decide whether to launch a new threat or boss phase.
 func _tick() -> void:
     if GameState.is_game_over():
         return
@@ -37,12 +51,15 @@ func _tick() -> void:
     if _boss_in_progress:
         return
     if GameState.active_threat != null:
+        # Wait for the current threat to resolve before arming a new warning.
         return
     var min_gap: float = _get_min_spawn_gap()
     if now < GameState.last_threat_end_time + min_gap:
+        # Honor the configured cooldown before scheduling the next threat.
         return
     _spawn_next_threat(now)
 
+## Returns true when the run has reached the boss start conditions.
 func _should_start_boss(now: float) -> bool:
     if GameState.boss_started:
         return false
@@ -55,6 +72,7 @@ func _should_start_boss(now: float) -> bool:
         return false
     return GameState.get_run_elapsed_seconds() >= hard_cap
 
+## Signals the boss warning state and schedules the phase runner once the timer lapses.
 func _start_boss_warning(now: float) -> void:
     _boss_in_progress = true
     GameState.boss_started = true
@@ -66,6 +84,7 @@ func _start_boss_warning(now: float) -> void:
     var timer: SceneTreeTimer = get_tree().create_timer(wait_time)
     timer.timeout.connect(_boss_run_phases)
 
+## Resolves each configured boss phase sequentially, short-circuiting on failure.
 func _boss_run_phases() -> void:
     if GameState.is_game_over():
         _boss_in_progress = false
@@ -87,6 +106,7 @@ func _boss_run_phases() -> void:
             GameState.boss_warning_end_time = 0.0
             _boss_in_progress = false
             return
+        # The await keeps intentional breathing room between phases so UI can react.
         if i < phases.size() - 1 and phase_gap > 0.0:
             var timer: SceneTreeTimer = get_tree().create_timer(phase_gap)
             await timer.timeout
@@ -97,6 +117,8 @@ func _boss_run_phases() -> void:
     GameState.boss_warning_end_time = 0.0
     _boss_in_progress = false
 
+## Spawns the next threat by weighted random and arms the resolve timer.
+## Returns true if a threat was scheduled.
 func _spawn_next_threat(now: float) -> void:
     var id_string: String = _weighted_pick()
     if id_string.is_empty():
@@ -117,11 +139,13 @@ func _spawn_next_threat(now: float) -> void:
     Events.threat_warning_started.emit(StringName(id_string), preview_power, ends_at)
     _arm_resolve_timer(ends_at)
 
+## Creates a resolve timer for the active threat to ensure late spawns still fire.
 func _arm_resolve_timer(ends_at: float) -> void:
     var wait: float = max(0.0, ends_at - Time.get_unix_time_from_system())
     var timer: SceneTreeTimer = get_tree().create_timer(wait)
     timer.timeout.connect(_resolve_active_threat)
 
+## Consumes the active threat, compares defense vs. power, and notifies listeners.
 func _resolve_active_threat() -> void:
     var threat_data: Variant = GameState.active_threat
     if threat_data == null:
@@ -147,6 +171,7 @@ func _resolve_active_threat() -> void:
         if not GameState.is_game_over():
             Events.game_over.emit("threat_" + id_string)
 
+## Chooses the next threat id based on configured weights, skipping disabled entries.
 func _weighted_pick() -> String:
     var weights: Dictionary = _threat_cfg.get("weights", {})
     var entries: Array = _threat_cfg.get("list", [])
@@ -204,6 +229,7 @@ func _get_warning_seconds() -> float:
         return float(value)
     return 0.0
 
+## Reads the minimum number of seconds between threats from config.
 func _get_min_spawn_gap() -> float:
     var global_cfg: Dictionary = _threat_cfg.get("global", {})
     var value: Variant = global_cfg.get("min_spawn_gap_seconds", 0.0)

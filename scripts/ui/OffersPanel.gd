@@ -1,3 +1,12 @@
+# -----------------------------------------------------------------------------
+# File: scripts/ui/OffersPanel.gd
+# Purpose: Lists harvest and contract offers with keyboard navigation
+# Depends: InputActions, OffersSystem (via controllers), Events, UIFx
+# Notes: Handles tab switching and activation for controller support
+# -----------------------------------------------------------------------------
+
+## OffersPanel
+## Renders active offers, supports selection, and starts chosen jobs.
 extends Control
 class_name OffersPanel
 
@@ -62,23 +71,23 @@ func is_open() -> bool:
 func _unhandled_input(event: InputEvent) -> void:
     if not _is_open:
         return
-    if event.is_action_pressed("cancel"):
+    if event.is_action_pressed(InputActions.CANCEL):
         close()
         accept_event()
-    elif event.is_action_pressed("confirm"):
+    elif event.is_action_pressed(InputActions.CONFIRM):
         if not _activate_focused_button():
             _try_start_current_tab()
         accept_event()
-    elif event.is_action_pressed("ui_down"):
+    elif event.is_action_pressed(InputActions.UI_DOWN):
         _move_focus(1)
         accept_event()
-    elif event.is_action_pressed("ui_up"):
+    elif event.is_action_pressed(InputActions.UI_UP):
         _move_focus(-1)
         accept_event()
-    elif event.is_action_pressed("ui_right"):
+    elif event.is_action_pressed(InputActions.UI_RIGHT):
         _change_tab(1)
         accept_event()
-    elif event.is_action_pressed("ui_left"):
+    elif event.is_action_pressed(InputActions.UI_LEFT):
         _change_tab(-1)
         accept_event()
 

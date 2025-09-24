@@ -1,3 +1,12 @@
+# -----------------------------------------------------------------------------
+# File: scripts/systems/HiveSystem.gd
+# Purpose: Tracks hive cell definitions, adjacency, and conversion state
+# Depends: ConfigDB, GameState
+# Notes: Central store for grid lookups and metadata per cell
+# -----------------------------------------------------------------------------
+
+## HiveSystem
+## Provides static helpers for working with grid cells and their assignments.
 extends Node
 class_name HiveSystem
 
@@ -21,12 +30,14 @@ const NEIGHBOR_DIRS: Array[Vector2i] = [
     Vector2i(0, 1)
 ]
 
+## Clears all cached cell data. Used when starting a fresh run.
 static func reset() -> void:
     _cells.clear()
     _cell_timers.clear()
     _center_cell_id = -1
     _coord_to_id.clear()
 
+## Registers or updates a hive cell definition from level data.
 static func register_cell(cell_id: int, data: Dictionary) -> void:
     var entry: Dictionary = data.duplicate(true)
     entry["cell_id"] = cell_id
@@ -53,6 +64,7 @@ static func set_center_cell(cell_id: int) -> void:
 static func get_center_cell_id() -> int:
     return _center_cell_id
 
+## Converts an existing cell to a new type and refreshes its capacity fields.
 static func convert_cell_type(cell_id: int, new_type: StringName) -> void:
     if not _cells.has(cell_id):
         return
@@ -73,6 +85,7 @@ static func convert_cell_type(cell_id: int, new_type: StringName) -> void:
         entry["efficiency_bonus"] = 0
     _cells[cell_id] = entry
 
+## Resets the targeted cell to the "Empty" configuration.
 static func create_empty_cell(cell_id: int) -> void:
     if cell_id == -1:
         return
@@ -80,6 +93,7 @@ static func create_empty_cell(cell_id: int) -> void:
         return
     convert_cell_type(cell_id, EMPTY_TYPE)
 
+## Sets or clears metadata for a cell, keeping a duplicate-safe dictionary.
 static func set_cell_metadata(cell_id: int, key: String, value: Variant) -> void:
     if not _cells.has(cell_id):
         return

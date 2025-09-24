@@ -1,3 +1,12 @@
+# -----------------------------------------------------------------------------
+# File: scripts/ui/RadialCandleHall.gd
+# Purpose: Candle Hall ritual radial selector with progress feedback
+# Depends: InputActions, CandleHallSystem, UIFx, Events
+# Notes: Shows ritual timers and supports keyboard focus cycling
+# -----------------------------------------------------------------------------
+
+## RadialCandleHall
+## Handles Candle Hall ritual activation flow and UI updates.
 extends Control
 class_name RadialCandleHall
 
@@ -168,16 +177,16 @@ func _process(_delta: float) -> void:
 func _unhandled_input(event: InputEvent) -> void:
     if not _is_open:
         return
-    if event.is_action_pressed("cancel"):
+    if event.is_action_pressed(InputActions.CANCEL):
         close()
         accept_event()
-    elif event.is_action_pressed("confirm"):
+    elif event.is_action_pressed(InputActions.CONFIRM):
         if _activate_current():
             accept_event()
-    elif event.is_action_pressed("ui_right") or event.is_action_pressed("ui_down"):
+    elif event.is_action_pressed(InputActions.UI_RIGHT) or event.is_action_pressed(InputActions.UI_DOWN):
         _move_focus(1)
         accept_event()
-    elif event.is_action_pressed("ui_left") or event.is_action_pressed("ui_up"):
+    elif event.is_action_pressed(InputActions.UI_LEFT) or event.is_action_pressed(InputActions.UI_UP):
         _move_focus(-1)
         accept_event()
 
