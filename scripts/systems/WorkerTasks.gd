@@ -1,3 +1,12 @@
+# -----------------------------------------------------------------------------
+# File: scripts/systems/WorkerTasks.gd
+# Purpose: Manages build/repair worker tasks and their lifecycle timers
+# Depends: HiveSystem, ConfigDB, CostPolicy, GameState, TraitsSystem
+# Notes: Central hub for scheduling hive construction jobs
+# -----------------------------------------------------------------------------
+
+## WorkerTasks
+## Static interface used by gameplay systems to queue build and repair jobs.
 extends Node
 class_name WorkerTasks
 
@@ -18,9 +27,11 @@ const CostPolicy := preload("res://scripts/systems/CostPolicy.gd")
 
 static var _tasks: Dictionary = {}
 
+## Returns true if any idle bee matches the optional preferred trait.
 static func has_available_bee(preferred_trait: StringName = StringName("")) -> bool:
     return GameState.find_available_bee(preferred_trait) != -1
 
+## Starts constructing an empty cell and schedules the completion callback.
 static func start_build(cell_id: int) -> bool:
     if _tasks.has(cell_id):
         return false
@@ -33,14 +44,14 @@ static func start_build(cell_id: int) -> bool:
     if cfg.is_empty():
         return false
     var cost: Dictionary = CostPolicy.get_empty_build_cost()
-    if not cost.is_empty() and not GameState.can_spend(cost):
+    if not CostPolicy.can_afford(cost):
         return false
     var bee_id: int = GameState.get_free_bee_id()
     if bee_id == -1:
         return false
     if not GameState.reserve_bee(bee_id):
         return false
-    if not cost.is_empty() and not CostPolicy.charge_for_empty_build():
+    if not CostPolicy.try_charge(cost):
         GameState.release_bee(bee_id)
         return false
     var base_seconds: float = float(cfg.get("seconds", 0.0))
@@ -68,6 +79,7 @@ static func start_build(cell_id: int) -> bool:
                 GameState.adjust_resource_quantity(resource_id, int(cost[resource]))
     return success
 
+## Starts a repair task for a damaged cell and reserves required resources.
 static func start_repair(cell_id: int) -> bool:
     if _tasks.has(cell_id):
         return false
@@ -77,15 +89,18 @@ static func start_repair(cell_id: int) -> bool:
     var cfg: Dictionary = ConfigDB.get_cell_repair_task(HiveSystem.DAMAGED_TYPE)
     if cfg.is_empty():
         return false
-    var cost: Dictionary = cfg.get("cost", {})
-    if not cost.is_empty() and not GameState.can_spend(cost):
+    var cost_value: Variant = cfg.get("cost", {})
+    var cost: Dictionary = {}
+    if typeof(cost_value) == TYPE_DICTIONARY:
+        cost = cost_value.duplicate(true)
+    if not CostPolicy.can_afford(cost):
         return false
     var bee_id: int = GameState.get_free_bee_id()
     if bee_id == -1:
         return false
     if not GameState.reserve_bee(bee_id):
         return false
-    if not cost.is_empty() and not GameState.spend(cost):
+    if not CostPolicy.try_charge(cost):
         GameState.release_bee(bee_id)
         return false
     var base_seconds: float = float(cfg.get("seconds", 0.0))

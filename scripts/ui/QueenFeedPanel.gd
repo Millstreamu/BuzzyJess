@@ -1,3 +1,12 @@
+# -----------------------------------------------------------------------------
+# File: scripts/ui/QueenFeedPanel.gd
+# Purpose: Allows feeding resources to the queen via button list
+# Depends: InputActions, UIFx, ConfigDB, GameState
+# Notes: Mirrors radial menu options for accessibility
+# -----------------------------------------------------------------------------
+
+## QueenFeedPanel
+## Provides a vertical list of feeding options and handles confirmation.
 extends Control
 class_name QueenFeedPanel
 
@@ -72,6 +81,6 @@ func _on_resources_changed(_snapshot: Dictionary) -> void:
 func _unhandled_input(event: InputEvent) -> void:
     if not _is_open:
         return
-    if event.is_action_pressed("cancel"):
+    if event.is_action_pressed(InputActions.CANCEL):
         close()
         accept_event()

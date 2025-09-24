@@ -1,3 +1,12 @@
+# -----------------------------------------------------------------------------
+# File: scripts/ui/AbilitiesPanel.gd
+# Purpose: Shows owned abilities and lets the player activate them
+# Depends: AbilitySystem, Events, InputActions, UIFx
+# Notes: Slide-in panel toggled via abilities_panel_toggle action
+# -----------------------------------------------------------------------------
+
+## AbilitiesPanel
+## Manages the ability list UI, including toggling, affordability, and activation.
 extends Control
 class_name AbilitiesPanel
 
@@ -124,7 +133,7 @@ func _finalize_close() -> void:
 func _unhandled_input(event: InputEvent) -> void:
     if not is_open():
         return
-    if event.is_action_pressed("cancel") or event.is_action_pressed("abilities_panel_toggle"):
+    if event.is_action_pressed(InputActions.CANCEL) or event.is_action_pressed(InputActions.ABILITIES_PANEL_TOGGLE):
         close()
         accept_event()
 

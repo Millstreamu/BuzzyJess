@@ -1,3 +1,12 @@
+# -----------------------------------------------------------------------------
+# File: scripts/ui/QueenSelect.gd
+# Purpose: Presents queen choices with keyboard navigation and animations
+# Depends: ConfigDB, InputActions, UIFx
+# Notes: Highlights cards with tweened selection frame
+# -----------------------------------------------------------------------------
+
+## QueenSelect
+## Builds the queen choice screen, handles movement, and emits selections.
 extends Control
 class_name QueenSelect
 
@@ -56,16 +65,16 @@ func _populate_cards() -> void:
         selection_frame.visible = false
 
 func _unhandled_input(event: InputEvent) -> void:
-    if event.is_action_pressed("ui_right") or event.is_action_pressed("ui_down"):
+    if event.is_action_pressed(InputActions.UI_RIGHT) or event.is_action_pressed(InputActions.UI_DOWN):
         _move(1)
         _accept()
-    elif event.is_action_pressed("ui_left") or event.is_action_pressed("ui_up"):
+    elif event.is_action_pressed(InputActions.UI_LEFT) or event.is_action_pressed(InputActions.UI_UP):
         _move(-1)
         _accept()
-    elif event.is_action_pressed("confirm"):
+    elif event.is_action_pressed(InputActions.CONFIRM):
         _confirm()
         _accept()
-    elif event.is_action_pressed("cancel"):
+    elif event.is_action_pressed(InputActions.CANCEL):
         _cancel_selection()
         _accept()
 

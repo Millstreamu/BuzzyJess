@@ -1,3 +1,12 @@
+# -----------------------------------------------------------------------------
+# File: scripts/ui/ResourcesPanel.gd
+# Purpose: Slide-in panel displaying resource totals and capacities
+# Depends: ConfigDB, GameState, IconDB, InputActions
+# Notes: Supports controller toggle via resources_panel_toggle
+# -----------------------------------------------------------------------------
+
+## ResourcesPanel
+## Builds resource rows and updates them when the snapshot changes.
 extends Control
 class_name ResourcesPanel
 
@@ -101,7 +110,7 @@ func _apply_snapshot() -> void:
 func _unhandled_input(event: InputEvent) -> void:
     if not _is_open or _closing:
         return
-    if event.is_action_pressed("cancel") or event.is_action_pressed("resources_panel_toggle"):
+    if event.is_action_pressed(InputActions.CANCEL) or event.is_action_pressed(InputActions.RESOURCES_PANEL_TOGGLE):
         _close()
         accept_event()
 

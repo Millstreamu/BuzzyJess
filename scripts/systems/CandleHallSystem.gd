@@ -1,4 +1,14 @@
+# -----------------------------------------------------------------------------
+# File: scripts/systems/CandleHallSystem.gd
+# Purpose: Drives Candle Hall rituals that unlock abilities over time
+# Depends: ConfigDB, AbilitySystem, CostPolicy, Events, UIFx
+# Notes: Charges Comb upfront and tracks ritual completion timers per cell
+# -----------------------------------------------------------------------------
+
+## CandleHallSystem
+## Handles starting rituals, tracking progress, and emitting ability rewards.
 extends Node
+class_name CandleHallSystem
 
 var _active: Dictionary = {}
 var _unlocked: bool = false
@@ -31,11 +41,11 @@ func start_ritual(cell_id: int) -> bool:
     var spend_cost: Dictionary = {}
     if comb_cost > 0:
         spend_cost[StringName("Comb")] = comb_cost
-        if not GameState.can_spend(spend_cost):
+        if not CostPolicy.can_afford(spend_cost):
             UIFx.flash_deny()
             UIFx.show_toast("Need %d Comb" % comb_cost)
             return false
-        if not GameState.spend(spend_cost):
+        if not CostPolicy.try_charge(spend_cost):
             UIFx.flash_deny()
             UIFx.show_toast("Need %d Comb" % comb_cost)
             return false

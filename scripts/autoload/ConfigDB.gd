@@ -1,4 +1,14 @@
+# -----------------------------------------------------------------------------
+# File: scripts/autoload/ConfigDB.gd
+# Purpose: Loads JSON configuration and exposes typed lookup helpers
+# Depends: FileAccess, JSON, GameState consumers
+# Notes: Validates config structure and reports parsing issues eagerly
+# -----------------------------------------------------------------------------
+
+## ConfigDB
+## Central repository of configuration data loaded from data/configs.
 extends Node
+class_name ConfigDB
 
 const BUILD_ORDER: Array[StringName] = [
     StringName("Brood"),
@@ -80,6 +90,39 @@ var _abilities_cfg: Dictionary = {}
 var _abilities_pool: Array[Dictionary] = []
 var _abilities_lookup: Dictionary = {}
 
+## Opens and parses a JSON file, reporting errors and returning the raw Variant.
+func _load_json(path: String, context: String) -> Variant:
+    if not FileAccess.file_exists(path):
+        push_error("%s not found at %s" % [context, path])
+        return null
+    var file: FileAccess = FileAccess.open(path, FileAccess.READ)
+    if file == null:
+        push_error("Failed to open %s" % path)
+        return null
+    var text: String = file.get_as_text()
+    file.close()
+    var parsed: Variant = JSON.parse_string(text)
+    if typeof(parsed) == TYPE_NIL:
+        push_error("Invalid JSON in %s" % context)
+        return null
+    return parsed
+
+## Convenience wrapper that ensures the parsed JSON is a dictionary.
+func _load_json_dict(path: String, context: String) -> Dictionary:
+    var parsed: Variant = _load_json(path, context)
+    if typeof(parsed) != TYPE_DICTIONARY:
+        push_error("%s must be a JSON object" % context)
+        return {}
+    return parsed
+
+## Convenience wrapper that ensures the parsed JSON is an array.
+func _load_json_array(path: String, context: String) -> Array:
+    var parsed: Variant = _load_json(path, context)
+    if typeof(parsed) != TYPE_ARRAY:
+        push_error("%s must be a JSON array" % context)
+        return []
+    return parsed
+
 func _ready() -> void:
     load_cells()
     load_resources()
@@ -97,18 +140,8 @@ func load_cells() -> void:
     _cell_defs.clear()
     _buildable_ids.clear()
     var path: String = "res://data/configs/cells.json"
-    if not FileAccess.file_exists(path):
-        push_warning("cells.json not found at %s" % path)
-        return
-    var file: FileAccess = FileAccess.open(path, FileAccess.READ)
-    if file == null:
-        push_warning("Failed to open %s" % path)
-        return
-    var text: String = file.get_as_text()
-    file.close()
-    var parsed: Variant = JSON.parse_string(text)
-    if typeof(parsed) != TYPE_DICTIONARY:
-        push_warning("Invalid cells.json contents")
+    var parsed: Dictionary = _load_json_dict(path, "cells.json")
+    if parsed.is_empty():
         return
     _cell_defs = parsed
     for id in BUILD_ORDER:
@@ -132,18 +165,8 @@ func load_resources() -> void:
     _resource_defs.clear()
     _resource_lookup.clear()
     var path: String = "res://data/configs/resources.json"
-    if not FileAccess.file_exists(path):
-        push_warning("resources.json not found at %s" % path)
-        return
-    var file: FileAccess = FileAccess.open(path, FileAccess.READ)
-    if file == null:
-        push_warning("Failed to open %s" % path)
-        return
-    var text: String = file.get_as_text()
-    file.close()
-    var parsed: Variant = JSON.parse_string(text)
-    if typeof(parsed) != TYPE_DICTIONARY:
-        push_warning("Invalid resources.json contents")
+    var parsed: Dictionary = _load_json_dict(path, "resources.json")
+    if parsed.is_empty():
         return
     var base_cap_value: Variant = parsed.get("base_caps_per_resource", 0)
     var base_cap: int = 0
@@ -151,7 +174,7 @@ func load_resources() -> void:
         base_cap = max(int(round(float(base_cap_value))), 0)
     var ids_value: Variant = parsed.get("ids", [])
     if typeof(ids_value) != TYPE_ARRAY:
-        push_warning("Invalid resources.json: expected 'ids' array")
+        push_error("Invalid resources.json: expected 'ids' array")
         return
     for entry in ids_value:
         var id_string: String = String(entry)
@@ -178,18 +201,8 @@ func load_start_values() -> void:
     _start_cells = 0
     _start_workers = 0
     var path: String = "res://data/configs/start_values.json"
-    if not FileAccess.file_exists(path):
-        push_warning("start_values.json not found at %s" % path)
-        return
-    var file := FileAccess.open(path, FileAccess.READ)
-    if file == null:
-        push_warning("Failed to open %s" % path)
-        return
-    var text_json: String = file.get_as_text()
-    file.close()
-    var parsed: Variant = JSON.parse_string(text_json)
-    if typeof(parsed) != TYPE_DICTIONARY:
-        push_warning("Invalid start_values.json contents")
+    var parsed: Dictionary = _load_json_dict(path, "start_values.json")
+    if parsed.is_empty():
         return
     _start_values = parsed
     var cells_value: Variant = parsed.get("start_cells", 0)
@@ -224,18 +237,8 @@ func load_offers() -> void:
     _offer_tick_seconds = 1.0
     _offer_delay_ratio = 0.05
     var path: String = "res://data/configs/offers.json"
-    if not FileAccess.file_exists(path):
-        push_warning("offers.json not found at %s" % path)
-        return
-    var file: FileAccess = FileAccess.open(path, FileAccess.READ)
-    if file == null:
-        push_warning("Failed to open %s" % path)
-        return
-    var text_json: String = file.get_as_text()
-    file.close()
-    var parsed: Variant = JSON.parse_string(text_json)
-    if typeof(parsed) != TYPE_DICTIONARY:
-        push_warning("Invalid offers.json contents")
+    var parsed: Dictionary = _load_json_dict(path, "offers.json")
+    if parsed.is_empty():
         return
     _offer_pools["harvests"] = _parse_offer_pool(parsed.get("harvests_pool", []), "harvests")
     _offer_pools["item_quests"] = _parse_offer_pool(parsed.get("item_quests_pool", []), "item_quests")
@@ -308,22 +311,12 @@ func _parse_offer_weights(source: Variant) -> Dictionary:
 func load_queens() -> void:
     _queen_defs.clear()
     var path: String = "res://data/configs/queens.json"
-    if not FileAccess.file_exists(path):
-        push_warning("queens.json not found at %s" % path)
-        return
-    var file: FileAccess = FileAccess.open(path, FileAccess.READ)
-    if file == null:
-        push_warning("Failed to open %s" % path)
-        return
-    var text_json: String = file.get_as_text()
-    file.close()
-    var parsed: Variant = JSON.parse_string(text_json)
-    if typeof(parsed) != TYPE_DICTIONARY:
-        push_warning("Invalid queens.json contents")
+    var parsed: Dictionary = _load_json_dict(path, "queens.json")
+    if parsed.is_empty():
         return
     var list_value: Variant = parsed.get("queens", [])
     if typeof(list_value) != TYPE_ARRAY:
-        push_warning("Invalid queens.json: expected 'queens' array")
+        push_error("Invalid queens.json: expected 'queens' array")
         return
     for entry in list_value:
         if typeof(entry) != TYPE_DICTIONARY:
@@ -353,18 +346,8 @@ func load_threats() -> void:
     _threat_weights.clear()
     _threat_global.clear()
     var path: String = "res://data/configs/threats.json"
-    if not FileAccess.file_exists(path):
-        push_warning("threats.json not found at %s" % path)
-        return
-    var file: FileAccess = FileAccess.open(path, FileAccess.READ)
-    if file == null:
-        push_warning("Failed to open %s" % path)
-        return
-    var text_json: String = file.get_as_text()
-    file.close()
-    var parsed: Variant = JSON.parse_string(text_json)
-    if typeof(parsed) != TYPE_DICTIONARY:
-        push_warning("Invalid threats.json contents")
+    var parsed: Dictionary = _load_json_dict(path, "threats.json")
+    if parsed.is_empty():
         return
     var global_value: Variant = parsed.get("global", {})
     if typeof(global_value) == TYPE_DICTIONARY:
@@ -397,18 +380,8 @@ func load_threats() -> void:
 func load_boss() -> void:
     _boss_cfg.clear()
     var path: String = "res://data/configs/boss.json"
-    if not FileAccess.file_exists(path):
-        push_warning("boss.json not found at %s" % path)
-        return
-    var file: FileAccess = FileAccess.open(path, FileAccess.READ)
-    if file == null:
-        push_warning("Failed to open %s" % path)
-        return
-    var text_json: String = file.get_as_text()
-    file.close()
-    var parsed: Variant = JSON.parse_string(text_json)
-    if typeof(parsed) != TYPE_DICTIONARY:
-        push_warning("Invalid boss.json contents")
+    var parsed: Dictionary = _load_json_dict(path, "boss.json")
+    if parsed.is_empty():
         return
     for key in parsed.keys():
         var value: Variant = parsed.get(key)
@@ -426,18 +399,8 @@ func load_boss() -> void:
 func load_traits() -> void:
     _traits_cfg.clear()
     var path: String = "res://data/configs/traits.json"
-    if not FileAccess.file_exists(path):
-        push_warning("traits.json not found at %s" % path)
-        return
-    var file := FileAccess.open(path, FileAccess.READ)
-    if file == null:
-        push_warning("Failed to open %s" % path)
-        return
-    var text_json: String = file.get_as_text()
-    file.close()
-    var parsed: Variant = JSON.parse_string(text_json)
-    if typeof(parsed) != TYPE_DICTIONARY:
-        push_warning("Invalid traits.json contents")
+    var parsed: Dictionary = _load_json_dict(path, "traits.json")
+    if parsed.is_empty():
         return
     var traits_list: Array[Dictionary] = []
     var traits_value: Variant = parsed.get("traits", [])
@@ -512,18 +475,8 @@ func load_eggs() -> void:
     _egg_rarity_visuals.clear()
     _egg_traits_per_rarity.clear()
     var path: String = "res://data/configs/eggs.json"
-    if not FileAccess.file_exists(path):
-        push_warning("eggs.json not found at %s" % path)
-        return
-    var file := FileAccess.open(path, FileAccess.READ)
-    if file == null:
-        push_warning("Failed to open %s" % path)
-        return
-    var text_json: String = file.get_as_text()
-    file.close()
-    var parsed: Variant = JSON.parse_string(text_json)
-    if typeof(parsed) != TYPE_DICTIONARY:
-        push_warning("Invalid eggs.json contents")
+    var parsed: Dictionary = _load_json_dict(path, "eggs.json")
+    if parsed.is_empty():
         return
     var feed_value: Variant = parsed.get("queen_feed", {})
     if typeof(feed_value) == TYPE_DICTIONARY:
@@ -573,18 +526,8 @@ func load_items() -> void:
     _item_defs.clear()
     _item_order.clear()
     var path: String = "res://data/configs/items.json"
-    if not FileAccess.file_exists(path):
-        push_warning("items.json not found at %s" % path)
-        return
-    var file := FileAccess.open(path, FileAccess.READ)
-    if file == null:
-        push_warning("Failed to open %s" % path)
-        return
-    var text_json: String = file.get_as_text()
-    file.close()
-    var parsed: Variant = JSON.parse_string(text_json)
-    if typeof(parsed) != TYPE_DICTIONARY:
-        push_warning("Invalid items.json contents")
+    var parsed: Dictionary = _load_json_dict(path, "items.json")
+    if parsed.is_empty():
         return
     var items_value: Variant = parsed.get("items", [])
     if typeof(items_value) == TYPE_ARRAY:
@@ -603,7 +546,7 @@ func load_items() -> void:
             def["icon"] = String(entry.get("icon", ""))
             _item_defs[id_string] = def
     else:
-        push_warning("Invalid items.json: expected 'items' array")
+        push_error("Invalid items.json: expected 'items' array")
     var order_value: Variant = parsed.get("order", [])
     if typeof(order_value) == TYPE_ARRAY:
         for entry in order_value:
@@ -625,18 +568,8 @@ func load_abilities() -> void:
     _abilities_pool.clear()
     _abilities_lookup.clear()
     var path := "res://data/configs/abilities.json"
-    if not FileAccess.file_exists(path):
-        push_warning("abilities.json not found at %s" % path)
-        return
-    var file := FileAccess.open(path, FileAccess.READ)
-    if file == null:
-        push_warning("Failed to open %s" % path)
-        return
-    var text := file.get_as_text()
-    file.close()
-    var parsed: Variant = JSON.parse_string(text)
-    if typeof(parsed) != TYPE_DICTIONARY:
-        push_warning("Invalid abilities.json contents")
+    var parsed: Dictionary = _load_json_dict(path, "abilities.json")
+    if parsed.is_empty():
         return
     var cfg: Dictionary = {}
     var max_value: Variant = parsed.get("max_list", 0)

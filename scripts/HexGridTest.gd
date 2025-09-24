@@ -1,3 +1,12 @@
+# -----------------------------------------------------------------------------
+# File: scripts/HexGridTest.gd
+# Purpose: Debug/test scene for interacting with the hive grid
+# Depends: InputActions, BuildManager, various UI controllers
+# Notes: Provides keyboard shortcuts for toggling UI panels during testing
+# -----------------------------------------------------------------------------
+
+## HexGridTest
+## Drives the sandbox scene used for development testing of hive features.
 extends Node2D
 
 const HiveSystem := preload("res://scripts/systems/HiveSystem.gd")
@@ -213,7 +222,7 @@ func _process(delta: float) -> void:
 func _unhandled_input(event: InputEvent) -> void:
     if _queen_select_active:
         return
-    if event.is_action_pressed("abilities_panel_toggle"):
+    if event.is_action_pressed(InputActions.ABILITIES_PANEL_TOGGLE):
         _close_candle_radial()
         var viewport_abilities := get_viewport()
         if _abilities_unlocked and _abilities_panel:
@@ -223,7 +232,7 @@ func _unhandled_input(event: InputEvent) -> void:
         if viewport_abilities:
             viewport_abilities.set_input_as_handled()
         return
-    if event.is_action_pressed("gather_panel_toggle"):
+    if event.is_action_pressed(InputActions.GATHER_PANEL_TOGGLE):
         _close_candle_radial()
         if _gathering_controller:
             _gathering_controller.toggle_panel()
@@ -232,7 +241,7 @@ func _unhandled_input(event: InputEvent) -> void:
             viewport_toggle.set_input_as_handled()
         return
 
-    if event.is_action_pressed("resources_panel_toggle"):
+    if event.is_action_pressed(InputActions.RESOURCES_PANEL_TOGGLE):
         _close_candle_radial()
         if _resources_panel:
             _resources_panel.toggle()
@@ -241,7 +250,7 @@ func _unhandled_input(event: InputEvent) -> void:
             viewport.set_input_as_handled()
         return
 
-    if event.is_action_pressed("inventory_panel_toggle"):
+    if event.is_action_pressed(InputActions.INVENTORY_PANEL_TOGGLE):
         _close_candle_radial()
         if _inventory_panel:
             _inventory_panel.toggle()
@@ -253,15 +262,15 @@ func _unhandled_input(event: InputEvent) -> void:
     if (_build_menu and _build_menu.is_open()) or (_queen_controller and _queen_controller.is_menu_open()) or (_brood_controller and _brood_controller.is_panel_open()) or (_assign_controller and _assign_controller.is_panel_open()) or (_resources_panel and _resources_panel.is_open()) or (_inventory_panel and _inventory_panel.is_open()) or (_gathering_controller and _gathering_controller.is_panel_open()) or (_abilities_panel and _abilities_panel.is_open()) or (_candle_radial and _candle_radial.is_open()):
         return
 
-    if event.is_action_pressed("ui_right"):
+    if event.is_action_pressed(InputActions.UI_RIGHT):
         _try_move_selection(Vector2i(1, 0))
-    elif event.is_action_pressed("ui_left"):
+    elif event.is_action_pressed(InputActions.UI_LEFT):
         _try_move_selection(Vector2i(-1, 0))
-    elif event.is_action_pressed("ui_up"):
+    elif event.is_action_pressed(InputActions.UI_UP):
         _try_move_selection(Vector2i(0, -1))
-    elif event.is_action_pressed("ui_down"):
+    elif event.is_action_pressed(InputActions.UI_DOWN):
         _try_move_selection(Vector2i(0, 1))
-    elif event.is_action_pressed("confirm"):
+    elif event.is_action_pressed(InputActions.CONFIRM):
         _handle_confirm()
 
 func _try_move_selection(delta: Vector2i) -> void:

@@ -1,3 +1,12 @@
+# -----------------------------------------------------------------------------
+# File: scripts/ui/BroodInsertPanel.gd
+# Purpose: Modal list for selecting eggs to insert into brood cells
+# Depends: InputActions, UIFx, Events
+# Notes: Provides button grid fallback when radial menu unavailable
+# -----------------------------------------------------------------------------
+
+## BroodInsertPanel
+## Offers a scrollable fallback UI for egg insertion choices.
 extends Control
 class_name BroodInsertPanel
 
@@ -75,6 +84,6 @@ func _on_inventory_changed(_snapshot: Dictionary) -> void:
 func _unhandled_input(event: InputEvent) -> void:
     if not _is_open:
         return
-    if event.is_action_pressed("cancel"):
+    if event.is_action_pressed(InputActions.CANCEL):
         close()
         accept_event()
