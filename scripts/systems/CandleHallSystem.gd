@@ -1,5 +1,4 @@
 extends Node
-class_name CandleHallSystem
 
 var _active: Dictionary = {}
 var _unlocked: bool = false
