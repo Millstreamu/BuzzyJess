@@ -22,6 +22,9 @@ ContractController="*res://scripts/systems/ContractController.gd"
 InventorySystem="*res://scripts/systems/InventorySystem.gd"
 TraitsSystem="*res://scripts/systems/TraitsSystem.gd"
 EggSystem="*res://scripts/systems/EggSystem.gd"
+AbilitySystem="*res://scripts/systems/AbilitySystem.gd"
+CandleHallSystem="*res://scripts/systems/CandleHallSystem.gd"
+BuffsSystem="*res://scripts/systems/BuffsSystem.gd"
 
 [input]
 ui_right={"deadzone":0.5,"events":[{"type":"InputEventKey","physical_keycode":4194321}]}
@@ -33,4 +36,5 @@ cancel={"deadzone":0.5,"events":[{"type":"InputEventKey","physical_keycode":90}]
 resources_panel_toggle={"deadzone":0.5,"events":[{"type":"InputEventKey","physical_keycode":4194305},{"type":"InputEventJoypadButton","button_index":7}]}
 inventory_panel_toggle={"deadzone":0.5,"events":[{"type":"InputEventKey","physical_keycode":73}]}
 gather_panel_toggle={"deadzone":0.5,"events":[{"type":"InputEventKey","physical_keycode":72}]}
+abilities_panel_toggle={"deadzone":0.5,"events":[{"type":"InputEventKey","physical_keycode":76}]}
 
