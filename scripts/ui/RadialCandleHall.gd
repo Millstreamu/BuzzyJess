@@ -179,4 +179,4 @@ func _on_ritual_completed(cell_id: int, _ability_id: StringName) -> void:
         return
     _end_time = 0.0
     _refresh_state()
-*** End EOF
+

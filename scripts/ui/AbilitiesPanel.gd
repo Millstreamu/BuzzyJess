@@ -127,4 +127,4 @@ func _unhandled_input(event: InputEvent) -> void:
     if event.is_action_pressed("cancel") or event.is_action_pressed("abilities_panel_toggle"):
         close()
         accept_event()
-*** End EOF
+
