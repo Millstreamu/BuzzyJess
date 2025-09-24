@@ -1,5 +1,4 @@
 extends Node
-class_name BuffsSystem
 
 var _buffs: Dictionary = {}
 var _next_id: int = 1
