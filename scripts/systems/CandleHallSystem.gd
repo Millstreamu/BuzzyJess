@@ -144,4 +144,4 @@ func _ensure_unlocked() -> void:
     if typeof(Events) == TYPE_OBJECT:
         Events.abilities_unlocked.emit()
     UIFx.show_toast("Abilities unlocked")
-*** End EOF
+
