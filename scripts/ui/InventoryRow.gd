@@ -55,6 +55,6 @@ func _format_count(amount: int) -> String:
     return "%d" % max(amount, 0)
 
 func _apply_count(amount: int) -> void:
-    var display := max(amount, 0)
+    var display: int = max(amount, 0)
     count_badge.text = _format_count(display)
     count_badge.visible = display > 0
