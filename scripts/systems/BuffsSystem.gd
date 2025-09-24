@@ -88,4 +88,3 @@ func _cleanup_target(target: StringName) -> void:
         _buffs.erase(target)
     else:
         _buffs[target] = list
-*** End EOF
