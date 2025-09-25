@@ -77,9 +77,10 @@ func is_ritual_active(cell_id: int) -> bool:
         _active.erase(cell_id)
         return false
     var timer: SceneTreeTimer = entry.get("timer", null)
-    if timer and timer.is_stopped():
-        _active.erase(cell_id)
-        return false
+    if timer:
+        if not is_instance_valid(timer) or timer.time_left <= 0.0:
+            _active.erase(cell_id)
+            return false
     var ends_value: Variant = entry.get("ends_at", 0.0)
     var ends_at: float = 0.0
     if typeof(ends_value) == TYPE_FLOAT or typeof(ends_value) == TYPE_INT:
