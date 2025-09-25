@@ -211,8 +211,8 @@ func _update_timer_display(seconds: float) -> void:
     progress_bar.value = seconds
     timer_value.text = _format_time(seconds)
 
-func _set_result(text: String, color: Color, show: bool) -> void:
-    result_label.visible = show and not text.is_empty()
+func _set_result(text: String, color: Color, should_show: bool) -> void:
+    result_label.visible = should_show and not text.is_empty()
     result_label.text = text
     result_label.modulate = color
 
@@ -231,6 +231,6 @@ func _hide_banner() -> void:
 
 func _format_time(seconds: float) -> String:
     var total: int = int(ceil(max(seconds, 0.0)))
-    var minutes: int = total / 60
-    var rem: int = total % 60
+    var minutes: int = int(total / 60.0)
+    var rem: int = total - minutes * 60
     return "%02d:%02d" % [minutes, rem]

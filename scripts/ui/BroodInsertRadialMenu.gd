@@ -47,13 +47,13 @@ class RadialOptionControl extends Control:
     var disabled_alpha: float = 0.5
     var _flash_tween: Tween = null
 
-    func setup(label: StringName, info: String, size: Vector2, is_affordable: bool) -> void:
+    func setup(label: StringName, info: String, icon_dimensions: Vector2, is_affordable: bool) -> void:
         label_text = String(label)
         info_text = info
-        icon_size = size
+        icon_size = icon_dimensions
         affordable = is_affordable
         mouse_filter = Control.MOUSE_FILTER_IGNORE
-        custom_minimum_size = Vector2(size.x, size.y + 36)
+        custom_minimum_size = Vector2(icon_dimensions.x, icon_dimensions.y + 36)
         size = custom_minimum_size
         queue_redraw()
 

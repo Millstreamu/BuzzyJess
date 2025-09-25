@@ -93,7 +93,10 @@ func _refresh_state() -> void:
     if _cell_id < 0:
         return
     var cfg: Dictionary = ConfigDB.abilities_ritual_cfg()
-    var comb_cost: int = int(round(float(cfg.get("comb_cost", 0))))
+    var comb_value: Variant = cfg.get("comb_cost", 0)
+    var comb_cost: int = 0
+    if typeof(comb_value) == TYPE_FLOAT or typeof(comb_value) == TYPE_INT:
+        comb_cost = max(int(round(float(comb_value))), 0)
     if comb_cost > 0:
         start_button.text = "Start Ritual (-%d Comb)" % comb_cost
     else:
@@ -129,27 +132,27 @@ func _format_time_left() -> String:
     return "In progress (%.0fs)" % ceil(remaining)
 
 func _position_option_layer(center: Vector2) -> void:
-    var size: Vector2 = option_layer.size
-    if size == Vector2.ZERO:
-        size = option_layer.get_combined_minimum_size()
-        if size == Vector2.ZERO:
-            size = Vector2(200, 160)
-    option_layer.size = size
-    option_layer.position = center - size * 0.5
+    var layer_size: Vector2 = option_layer.size
+    if layer_size == Vector2.ZERO:
+        layer_size = option_layer.get_combined_minimum_size()
+        if layer_size == Vector2.ZERO:
+            layer_size = Vector2(200, 160)
+    option_layer.size = layer_size
+    option_layer.position = center - layer_size * 0.5
     _clamp_option_layer()
 
 func _clamp_option_layer() -> void:
     var rect: Rect2i = get_viewport_rect()
     var pos: Vector2 = option_layer.position
-    var size: Vector2 = option_layer.size
-    if size == Vector2.ZERO:
-        size = option_layer.get_combined_minimum_size()
+    var layer_size: Vector2 = option_layer.size
+    if layer_size == Vector2.ZERO:
+        layer_size = option_layer.get_combined_minimum_size()
     var min_x: float = padding.x
-    var max_x: float = rect.size.x - padding.x - size.x
+    var max_x: float = rect.size.x - padding.x - layer_size.x
     if max_x < min_x:
         max_x = min_x
     var min_y: float = padding.y
-    var max_y: float = rect.size.y - padding.y - size.y
+    var max_y: float = rect.size.y - padding.y - layer_size.y
     if max_y < min_y:
         max_y = min_y
     option_layer.position = Vector2(clamp(pos.x, min_x, max_x), clamp(pos.y, min_y, max_y))
