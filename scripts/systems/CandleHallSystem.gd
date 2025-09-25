@@ -76,7 +76,7 @@ func is_ritual_active(cell_id: int) -> bool:
     if entry.is_empty():
         _active.erase(cell_id)
         return false
-    var timer: Timer = entry.get("timer", null)
+    var timer: SceneTreeTimer = entry.get("timer", null)
     if timer and timer.is_stopped():
         _active.erase(cell_id)
         return false
@@ -104,10 +104,9 @@ func unlocked() -> bool:
 func _complete_ritual(cell_id: int) -> void:
     var entry: Dictionary = _active.get(cell_id, {})
     if not entry.is_empty():
-        var timer: Timer = entry.get("timer", null)
+        var timer: SceneTreeTimer = entry.get("timer", null)
         if timer:
             timer.stop()
-            timer.queue_free()
     _active.erase(cell_id)
     var id: StringName = AbilitySystem.add_random_from_pool()
     if id != StringName(""):
@@ -139,10 +138,9 @@ func _on_cell_converted(cell_id: int, new_type: StringName) -> void:
     else:
         if _active.has(cell_id):
             var entry: Dictionary = _active[cell_id]
-            var timer: Timer = entry.get("timer", null)
-            if timer:
-                timer.stop()
-                timer.queue_free()
+        var timer: SceneTreeTimer = entry.get("timer", null)
+        if timer:
+            timer.stop()
             _active.erase(cell_id)
 
 func _ensure_unlocked() -> void:
