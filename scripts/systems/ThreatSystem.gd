@@ -8,7 +8,6 @@
 ## ThreatSystem
 ## Manages the threat lifecycle, including periodic warnings and boss encounters.
 extends Node
-class_name ThreatSystem
 
 var _rng := RandomNumberGenerator.new()
 var _tick_timer: Timer

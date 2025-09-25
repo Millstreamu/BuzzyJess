@@ -1,5 +1,4 @@
 extends Node
-class_name AbilitySystem
 
 var _list: Array[Dictionary] = []
 

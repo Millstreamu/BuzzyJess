@@ -8,7 +8,6 @@
 ## CandleHallSystem
 ## Handles starting rituals, tracking progress, and emitting ability rewards.
 extends Node
-class_name CandleHallSystem
 
 var _active: Dictionary = {}
 var _unlocked: bool = false
