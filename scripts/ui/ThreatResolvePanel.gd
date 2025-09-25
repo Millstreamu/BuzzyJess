@@ -67,7 +67,7 @@ func _configure_slide_animations() -> void:
     else:
         push_warning("ThreatResolvePanel is missing 'slide_down' animation; falling back to instant hide")
 
-func _on_resolved(id: StringName, success: bool, power: int, defense: int) -> void:
+func _on_resolved(_id: StringName, success: bool, power: int, defense: int) -> void:
     _sequence_token += 1
     _stop_next_countdown()
     _fill_result(success, power, defense)
@@ -147,8 +147,9 @@ func _update_next_time() -> void:
         return
     var now: float = Time.get_unix_time_from_system()
     var left: float = maxf(0.0, _next_end_time - now)
-    var minutes := int(left) / 60
-    var seconds := int(left) % 60
+    var total: int = int(floor(left))
+    var minutes: int = int(total / 60.0)
+    var seconds: int = total - minutes * 60
     next_time.text = " in %02d:%02d" % [minutes, seconds]
     if left <= 0.0:
         _next_end_time = 0.0
@@ -185,8 +186,8 @@ func _hide_panel() -> void:
     _stop_next_countdown()
     _clear_next_box()
 
-func _on_animation_finished(name: StringName) -> void:
-    if name == StringName("slide_down"):
+func _on_animation_finished(anim_name: StringName) -> void:
+    if anim_name == StringName("slide_down"):
         _hide_panel()
 
 func _notification(what: int) -> void:

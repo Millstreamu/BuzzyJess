@@ -9,8 +9,8 @@
 ## Drives the sandbox scene used for development testing of hive features.
 extends Node2D
 
-const HiveSystem := preload("res://scripts/systems/HiveSystem.gd")
-const MergeSystem := preload("res://scripts/systems/MergeSystem.gd")
+const _HiveSystemScript := preload("res://scripts/systems/HiveSystem.gd")
+const _MergeSystemScript := preload("res://scripts/systems/MergeSystem.gd")
 const FloatingTextScene := preload("res://scenes/FX/FloatingText.tscn")
 const HAMMER_TEXTURE := preload("res://art/icons/hammer.svg")
 const QueenSelectScene := preload("res://scenes/UI/QueenSelect.tscn")
@@ -204,7 +204,7 @@ func _add_available_neighbors(cell_id: int) -> void:
     else:
         queue_redraw()
 
-func _process(delta: float) -> void:
+func _process(_delta: float) -> void:
     if _build_manager == null:
         return
     var has_building := false
@@ -487,14 +487,14 @@ func _on_production_tick(cell_id: int, resource_id: StringName, amount: int) -> 
 func _on_harvest_tick(_id: StringName, _time_left: float, partials: Dictionary) -> void:
     if typeof(partials) != TYPE_DICTIONARY or partials.is_empty():
         return
-    var position: Vector2 = _find_gathering_hut_position()
+    var hut_position: Vector2 = _find_gathering_hut_position()
     for key in partials.keys():
         var amount: int = int(partials.get(key, 0))
         if amount <= 0:
             continue
         var resource_id: StringName = StringName(String(key))
         var short_name: String = ConfigDB.get_resource_short_name(resource_id)
-        _spawn_floating_text(position, "+%d %s" % [amount, short_name])
+        _spawn_floating_text(hut_position, "+%d %s" % [amount, short_name])
 
 func _on_queen_fed(tier: StringName) -> void:
     if _queen_cell_id == -1:
@@ -564,21 +564,21 @@ func _ensure_queen_tile_state() -> void:
         return
     HiveSystem.set_cell_type(_queen_cell_id, SEAT_TYPE)
 
-func _spawn_floating_text(position: Vector2, text: String) -> void:
+func _spawn_floating_text(world_position: Vector2, text: String) -> void:
     var ft: Node = FloatingTextScene.instantiate()
     if ft == null:
         return
     if ft is Label:
         var label_ft: Label = ft
         add_child(label_ft)
-        label_ft.global_position = position
+        label_ft.global_position = world_position
         if label_ft.has_method("setup"):
             label_ft.setup(text)
         else:
             label_ft.text = text
     else:
         add_child(ft)
-        ft.global_position = position
+        ft.global_position = world_position
         if ft.has_method("setup"):
             ft.setup(text)
 

@@ -245,8 +245,8 @@ func _create_progress_row(resource_id: StringName, total: int) -> Dictionary:
 
 func _format_time_left(seconds: float) -> String:
     var total: int = int(round(seconds))
-    var minutes: int = total / 60
-    var secs: int = total % 60
+    var minutes: int = int(total / 60.0)
+    var secs: int = total - minutes * 60
     return "%02d:%02d" % [minutes, secs]
 
 func _update_visibility() -> void:
