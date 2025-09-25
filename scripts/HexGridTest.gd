@@ -225,7 +225,10 @@ func _unhandled_input(event: InputEvent) -> void:
     if event.is_action_pressed(InputActions.ABILITIES_PANEL_TOGGLE):
         _close_candle_radial()
         var viewport_abilities := get_viewport()
-        if _abilities_unlocked and _abilities_panel:
+        var abilities_ready := _abilities_unlocked
+        if not abilities_ready and typeof(CandleHallSystem) == TYPE_OBJECT:
+            abilities_ready = CandleHallSystem.unlocked()
+        if abilities_ready and _abilities_panel:
             _abilities_panel.toggle()
         else:
             UIFx.flash_deny()
@@ -343,7 +346,10 @@ func _close_candle_radial() -> void:
         _candle_radial.close()
 
 func _on_abilities_unlocked() -> void:
-    _abilities_unlocked = true
+    if typeof(CandleHallSystem) == TYPE_OBJECT:
+        _abilities_unlocked = CandleHallSystem.unlocked()
+    else:
+        _abilities_unlocked = true
 
 func _draw_bee_icons(center: Vector2, icons: Array) -> void:
     if icons.is_empty():
