@@ -8,7 +8,6 @@
 ## ConfigDB
 ## Central repository of configuration data loaded from data/configs.
 extends Node
-class_name ConfigDB
 
 const BUILD_ORDER: Array[StringName] = [
     StringName("Brood"),
