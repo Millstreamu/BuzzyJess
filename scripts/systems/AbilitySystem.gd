@@ -191,4 +191,3 @@ func _apply_effect(effect: Variant) -> bool:
             return HarvestController.apply_boost(effect)
         _:
             return false
-*** End EOF

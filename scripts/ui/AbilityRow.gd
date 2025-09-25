@@ -83,4 +83,3 @@ func _apply_style() -> void:
     style.set_border_width_all(1)
     style.set_corner_radius_all(12)
     add_theme_stylebox_override("panel", style)
-*** End EOF
