@@ -138,9 +138,9 @@ func _on_cell_converted(cell_id: int, new_type: StringName) -> void:
     else:
         if _active.has(cell_id):
             var entry: Dictionary = _active[cell_id]
-        var timer: SceneTreeTimer = entry.get("timer", null)
-        if timer:
-            timer.stop()
+            var timer: SceneTreeTimer = entry.get("timer", null)
+            if timer:
+                timer.stop()
             _active.erase(cell_id)
 
 func _ensure_unlocked() -> void:
