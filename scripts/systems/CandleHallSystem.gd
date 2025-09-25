@@ -55,12 +55,15 @@ func start_ritual(cell_id: int) -> bool:
     var ends_at: float = Time.get_unix_time_from_system() + secs
     var entry: Dictionary = {"ends_at": ends_at}
     if secs > 0.0:
-        var timer := get_tree().create_timer(secs)
-        if timer:
-            timer.timeout.connect(func() -> void:
-                _complete_ritual(cell_id)
-            , CONNECT_ONE_SHOT)
-            entry["timer"] = timer
+        var timer := Timer.new()
+        timer.one_shot = true
+        timer.wait_time = secs
+        add_child(timer)
+        timer.timeout.connect(func() -> void:
+            _complete_ritual(cell_id)
+        , CONNECT_ONE_SHOT)
+        timer.start()
+        entry["timer"] = timer
     _active[cell_id] = entry
     if typeof(Events) == TYPE_OBJECT:
         Events.resources_changed.emit(GameState.get_resources_snapshot())
@@ -76,7 +79,7 @@ func is_ritual_active(cell_id: int) -> bool:
     if entry.is_empty():
         _active.erase(cell_id)
         return false
-    var timer: SceneTreeTimer = entry.get("timer", null)
+    var timer: Timer = entry.get("timer", null)
     if timer:
         if not is_instance_valid(timer) or timer.time_left <= 0.0:
             _active.erase(cell_id)
@@ -105,9 +108,10 @@ func unlocked() -> bool:
 func _complete_ritual(cell_id: int) -> void:
     var entry: Dictionary = _active.get(cell_id, {})
     if not entry.is_empty():
-        var timer: SceneTreeTimer = entry.get("timer", null)
-        if timer:
+        var timer: Timer = entry.get("timer", null)
+        if timer and is_instance_valid(timer):
             timer.stop()
+            timer.queue_free()
     _active.erase(cell_id)
     var id: StringName = AbilitySystem.add_random_from_pool()
     if id != StringName(""):
@@ -139,9 +143,10 @@ func _on_cell_converted(cell_id: int, new_type: StringName) -> void:
     else:
         if _active.has(cell_id):
             var entry: Dictionary = _active[cell_id]
-            var timer: SceneTreeTimer = entry.get("timer", null)
-            if timer:
+            var timer: Timer = entry.get("timer", null)
+            if timer and is_instance_valid(timer):
                 timer.stop()
+                timer.queue_free()
             _active.erase(cell_id)
 
 func _ensure_unlocked() -> void:
