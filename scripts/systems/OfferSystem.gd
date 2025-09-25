@@ -1,5 +1,4 @@
 extends Node
-class_name OfferSystem
 
 var visible_harvests: Array[Dictionary] = []
 var visible_contracts: Array[Dictionary] = []
