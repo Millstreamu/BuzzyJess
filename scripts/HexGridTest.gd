@@ -106,6 +106,8 @@ func _ready() -> void:
         Events.bee_hatched.connect(_on_bee_hatched)
     if not Events.abilities_unlocked.is_connected(_on_abilities_unlocked):
         Events.abilities_unlocked.connect(_on_abilities_unlocked)
+    if Events.has_signal("ability_added") and not Events.ability_added.is_connected(_on_ability_added):
+        Events.ability_added.connect(_on_ability_added)
     if typeof(CandleHallSystem) == TYPE_OBJECT and CandleHallSystem.unlocked():
         _abilities_unlocked = true
     queue_redraw()
@@ -225,7 +227,10 @@ func _unhandled_input(event: InputEvent) -> void:
     if event.is_action_pressed(InputActions.ABILITIES_PANEL_TOGGLE):
         _close_candle_radial()
         var viewport_abilities := get_viewport()
-        if _abilities_unlocked and _abilities_panel:
+        var abilities_ready := _abilities_unlocked
+        if not abilities_ready and typeof(CandleHallSystem) == TYPE_OBJECT:
+            abilities_ready = CandleHallSystem.unlocked()
+        if abilities_ready and _abilities_panel:
             _abilities_panel.toggle()
         else:
             UIFx.flash_deny()
@@ -343,6 +348,12 @@ func _close_candle_radial() -> void:
         _candle_radial.close()
 
 func _on_abilities_unlocked() -> void:
+    if typeof(CandleHallSystem) == TYPE_OBJECT:
+        _abilities_unlocked = CandleHallSystem.unlocked()
+    else:
+        _abilities_unlocked = true
+
+func _on_ability_added(_id: StringName) -> void:
     _abilities_unlocked = true
 
 func _draw_bee_icons(center: Vector2, icons: Array) -> void:
