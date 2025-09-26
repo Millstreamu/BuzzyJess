@@ -106,6 +106,8 @@ func _ready() -> void:
         Events.bee_hatched.connect(_on_bee_hatched)
     if not Events.abilities_unlocked.is_connected(_on_abilities_unlocked):
         Events.abilities_unlocked.connect(_on_abilities_unlocked)
+    if Events.has_signal("ability_added") and not Events.ability_added.is_connected(_on_ability_added):
+        Events.ability_added.connect(_on_ability_added)
     if typeof(CandleHallSystem) == TYPE_OBJECT and CandleHallSystem.unlocked():
         _abilities_unlocked = true
     queue_redraw()
@@ -350,6 +352,9 @@ func _on_abilities_unlocked() -> void:
         _abilities_unlocked = CandleHallSystem.unlocked()
     else:
         _abilities_unlocked = true
+
+func _on_ability_added(_id: StringName) -> void:
+    _abilities_unlocked = true
 
 func _draw_bee_icons(center: Vector2, icons: Array) -> void:
     if icons.is_empty():
