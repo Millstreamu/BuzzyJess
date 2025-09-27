@@ -1,197 +1,154 @@
-Bee Hive — Design Doc (Godot 4.4.1 · GDScript · 2D)
-
-## Pitch
-
-Controller-first, calm real-time hive-builder roguelite. Start from a single Queen cell, expand tile-by-tile, assign bees, run Harvests & Contracts, and survive to the boss before the swarm/end.
-
-## Design Pillars
-
-- Controller-first
-- Readable UI
-- Low-pressure real-time
-- JSON-driven balance
-- Short runs, meta via Queen & traits
+# Bee Hive — Design Doc (Rev B)
 
 ## Core Loop
 
-1. **Start:** One built Queen cell in the center.
-2. **Expand:** Build Empty cells (cost/time/bee), then convert to Specialised.
-3. **Queen → Eggs → Brood → Bees:** Rarity/traits inform Assignments.
-4. **Gatherers** run Harvests (trickled resources) and Contracts (items → inventory).
-5. **Handle threats, build defense,** and beat the boss before the swarm.
+- Pick 1 of 3 Queen cards → place Queen Seat (center).
+- Expand with Specialized Cells; form Complexes (contiguous same-type groups).
+- Run Harvests/Item Quests via Gathering Huts; brew at Honey Vats; build Wax Workshops; generate Defense with Guard Posts.
+- Candle Halls auto-create single-use Abilities.
+- Brood forms by enclosure; hatch bees via trait draft.
+- Survive threats and the boss.
 
-## World & Grid
+## Controls (keyboard/controller only)
 
-- 2D, hex flat-topped (axial q,r), TileMap visuals.
-- Merging: Adjacent same-type cells form a building group; capacity linear, output = base × (1 + 0.6·(size−1)); max size 7; colored outline.
+- Arrows = move | Space = confirm/context | Z = cancel/back | Tab/Start = panels. No mouse.
 
-## Build, Convert, Repair
+## Grid & Complexes
 
-- **Build Empty Cell:** cost 1 Comb, requires 1 free bee, 10s; Construction trait: −3s → 7s. Must be adjacent to any built cell.
-- **Convert Empty → Specialised:** instant (unless noted).
-- **Damaged:** blocked tile. Repair → Empty: 2 Comb, 1 bee, 30s; Construction: −3s → 27s.
+- Hex, flat-topped, axial (q,r).
+- Complex = contiguous same-type Specialized Cells (visual shared outline).
+- The old generic “−0.5s per neighbor” rule is removed.
 
-## Queen, Eggs, Brood, Traits
+## Resources & Items
 
-- Feed Queen → Egg (goes to Inventory)
-  - 10 Honey → Common (hatch 10s; 5% bump to Unique)
-  - 20 Honey → Unique (hatch 15s; 10% bump to Rare)
-  - 30 Honey → Rare (hatch 20s)
-- Brood cell (build then insert egg): 1 Comb + 5 Honey, 1 bee, 5s to build → insert egg → hatch (10/15/20s). After hatch: cell becomes Damaged, bee added to roster (unassigned).
-- Bee rarities (outline): Common green, Unique blue, Rare purple.
-- Traits (examples):
-  - Construction: −3s on build/repair tasks.
-  - Gather: +% to Harvest trickle rate.
-  - (Future: Brewer, Guard, Arcanist, etc.)
-- Assignments: Space on a building → Assign panel (bee cards with icon, name, “+N” efficiency).
+- Resources (cap-limited): Honey, Comb, Pollen, NectarCommon.
+- Items (inventory): RoyalJelly (RJ). (Eggs are a hidden Queen counter, not items.)
 
-## Roles & Specialised Cells
+## Queen
 
-- Gatherers: do Harvests (resource trickle) + Contracts (items).
-- Wax Workshop (Builders): 2 Pollen → 1 Comb per 5s per bee; cap 2; merge-scales.
-- Honey Vat (Brewers): shared batch; cap 3; recipes (bee-count gates):
-  - Common: 2× Common → 1 Honey / 5s (≥1 bee)
-  - Sweet: 2× Sweet → 2 Honey / 10s (≥2 bees)
-  - Rich: 1× Rich → 1 Honey / 15s (≥3 bees)
-  - Each extra bee reduces current batch −1s (respects gates).
-- Guard Post (Guards): builds Defense Meter over time. Tick 5s → 4s/3s with upgrades; +1/guard/tick and +1/guard per level; cap grows with upgrades; upgrade costs double per level.
-- Candle Hall (Arcanists): rituals 60s − 5s/bee (min 20s), roll 3, pay on cast, instant cast.
-- Storage: +5 cap per level; L5 max; upgrade cost doubles per level.
-- Brood / Damaged: see above.
+- Base eggs: lays +1 egg every 20/19/18/17/16s (tiers 1→5).
+- Tiers: unlocked by spending Royal Jelly (T2..T5 costs 1/2/3/4 RJ).
+- Queen cards (total 3, no duplicates): offered 3, pick 1 at run start and on each tier-up.
+  - RareBias20 (+20% rare-family bias)
+  - ExtraDraftCard (+1 draft card)
+  - PickTwo (pick 2 traits)
+- HUD shows a small egg counter.
 
-## Harvests (Gatherers) — Trickle
+## Brood (enclosure system)
 
-- Offer shows name, required bees, duration D, totals (e.g., Pollen 50, Nectar 30).
-- Start only if enough free Gatherers (and cost if any).
-- 5% delay, then even trickle per second across remaining time using float accumulators; spawn “+x” at the field each non-zero tick.
-- If storage is full, undelivered amounts keep trying; any left at final tick is wasted.
-- On completion, bees free; UI updates.
+- Create: Any void hex fully enclosed by Specialized cells becomes Brood (no build cost/menu).
+- Eggs: Auto-assigned 1:1 from Queen’s pool when available; hatch timer starts.
+- Hatch: 10s (configurable). On finish, cell shows READY until player selects → Trait Draft.
+- Draft: 3 cards base; +1 if you have the Queen card; Pick 2 if you have that card.
+- Neighbor influence (edges only):
+  - Guard Post → Guard
+  - Gathering Hut → Gather
+  - Wax → Construction
+  - Honey Vat → Brewer
+  - Candle Hall → Arcanist
+- If ≥2 distinct families present, 50% chance the draft restricts to those families.
+- Break enclosure (future-proof): Brood → Damaged, egg lost.
+- Repair Damaged → not needed here (Damaged arises only from enclosure break; repair rules can reuse global repair if later added).
+- Config:
 
-## Contracts (Items)
-
-- Separate from Harvests.
-- Example: “Thistle Flower” — N bees, cost (e.g., 10 Honey, 5 Pollen), 20s, reward item (stacks) to Inventory.
-- Multiple can run if you have bees and resources.
-
-## Resources, Items, Storage
-
-- Resources: Honey, Comb, Pollen, NectarCommon/Sweet/Rich, PetalWhite/Pink/Yellow/Red/Blue/Purple, plus item IDs (e.g., ThistleFlower).
-- Inventory: holds Eggs (Common/Unique/Rare) and item rewards (stacking).
-- Per-resource caps; production pauses on full. (Harvest exception: waste at end.)
-- Start values (JSON, editable): Honey 1, Comb 5, Pollen 5, NectarCommon 5; Egg 3 in inventory.
-
-## Threats & Boss (kept from v1)
-
-- One threat active at a time; 5-min warning, then single check vs Defense Meter; Power ×2 each reappearance; fail = loss.
-- Boss auto by 45 min; 3 checks 1000/1300/1700 one minute apart; debuffs on failed phases.
-
-## Controls (defaults)
-
-- Arrows move cursor; Space context action; Z back.
-- Space on Empty → Radial Build (round buttons; arrows select; Space confirm).
-- Space on Building → Assign panel (bee cards; Space assigns).
-- Tab / Start → Resources slide-out (name 10/20, icons, live update).
-- Harvests/Contracts panels: right slide; Space to start.
-- A / LB/L1 toggle Outside⟷Hive.
-- HUD always shows: Swarm bar, Defense meter, Active field assignments, Threat warning, Ritual progress.
-
-## Tech & Architecture
-
-- Godot 4.4.1, GDScript, TileMap (hex, flat-top).
-- Data-only bees; per-building Timer nodes; JSON configs via ConfigDB.gd.
-- Events.gd autoload (signals) → HUD/panels react.
-- Merge recomputed locally per edit.
-
-### Repo Skeleton
-
-```
-/assets/{sprites,sfx,fonts}/
-/data/configs/
-  resources.json
-  start_values.json
-  cells.json
-  fields/{wildflower.json,clover.json,lavender.json,orchard.json,herb_garden.json,sunflower.json}
-  harvests.json
-  contracts.json
-  abilities.json
-  threats.json
-  queen_traits.json
-  upgrades.json
-  controls.json
-/scenes/{Game.tscn,HiveView.tscn,OutsideView.tscn,UI/{Hud.tscn,Panels...}}
-/scripts/
-  autoload/{ConfigDB.gd,GameState.gd,Events.gd}
-  models/{BeeModel.gd,CellModel.gd,FieldModel.gd}
-  systems/{HiveSystem.gd,MergeSystem.gd,FieldSystem.gd,ProductionSystem.gd,
-           DefenseSystem.gd,ThreatSystem.gd,AbilitySystem.gd,HarvestController.gd,ContractController.gd}
-  controllers/{InputController.gd,SelectionController.gd,BuildController.gd,AssignController.gd}
-  ui/{BuildRadialMenu.gd,AssignBeePanel.gd,ResourcesPanel.gd,HarvestsPanel.gd,ContractsPanel.gd,InventoryPanel.gd}
+```json
+{ "Brood": { "hatch_seconds": 10, "mixed_neighbors_restrict_chance": 0.5 } }
 ```
 
-## Key JSON (concise examples)
+## Wax Workshop
 
-### start_values.json
+- Build: 2 Comb + 10 Pollen.
+- Bee cap: 1/cell.
+- Tick: every 5s, 2 Pollen → 1 Comb per cell.
+- Merge: output × (1 + 0.6·(size−1)) per complex.
+- Adjacency (same type): +10% output per adjacent Wax edge (both sides benefit).
+- Trait – Construction: +5% output per Construction bee assigned anywhere in that Wax complex (no cap).
 
-```
-{ "start_cells": 1, "start_workers": 0,
-  "resources": {"Honey":1,"Comb":5,"Pollen":5,"NectarCommon":5},
-  "inventory": {"EggCommon":3}
-}
-```
+## Honey Vat
 
-### cells.json (excerpt)
+- Build: 2 Comb + 5 Nectar.
+- Bee cap: 1/cell.
+- Batch: 2 Nectar → 1 Honey.
+- Batch time (complex trade-off): 5s + 1s × (complex_size−1).
+- Local buffer: +5 Honey × complex_size (adds to caps from Storage; used to hold short bursts).
+- Purity → Royal Jelly (per complex):
+  - +1 Purity per batch;
+  - +10 more per batch if any Vat tile touches a Candle Hall;
+  - at 100 Purity ⇒ +1 RJ, reset to 0.
 
-```
-{
-  "Empty": { "build": {"cost":{"Comb":1},"requires_bee":true,"seconds":10,"trait_construction_bonus":3}, "mergeable":false },
-  "Brood": { "cost":{"Comb":1,"Honey":5}, "requires_bee":true, "build_seconds":5,
-             "hatch_seconds":{"Common":10,"Unique":15,"Rare":20},
-             "rarity_bumps":{"CommonToUnique":0.05,"UniqueToRare":0.10},
-             "post_hatch":"Damaged", "mergeable":false },
-  "Damaged": { "repair":{"cost":{"Comb":2},"requires_bee":true,"seconds":30,"trait_construction_bonus":3},
-               "buildable":false,"assignable":false,"mergeable":false },
-  "HoneyVat": { ... }, "WaxWorkshop": { ... }, "GuardPost": { ... }, "CandleHall": { ... }, "Storage": { ... }
-}
-```
+## Storage (cell-scoped caps)
 
-### harvests.json
+- Build: 1 Comb.
+- Each Storage edge gives +5 capacity to the linked resource(s) of the adjacent producer:
+  - Wax → Comb;
+  - Vat → Honey;
+  - Gathering Hut → Pollen and Nectar.
+- Total cap per resource = sum of all linked per-cell caps across producers.
+- Overflow: Production/harvest continues; overflow is binned (no pause).
 
-```
-{ "offers":[
-    {"id":"Harvest_Wildflower","name":"Wildflower Field","required_bees":3,"duration_seconds":100,
-     "outputs":{"Pollen":50,"NectarCommon":30}}
-  ],
-  "tick_seconds":1, "delay_ratio":0.05
-}
-```
+## Gathering Hut (offers, auto-routing, virtual bees)
 
-### contracts.json
+- Build: 2 Comb + 10 Honey.
+- No passive output. Used to run Harvests and Item Quests.
+- Offer slots: base 2 Harvest + 2 Item Quests, then +1 of each per extra Hut complex.
+- Start job UX: player selects an offer; system auto-picks the smallest eligible Hut complex, ties → earliest built.
+- Complex reservation: chosen complex is reserved for that job; different jobs need different complexes.
+- Virtual bees: +⌊complex_size / 2⌋ bees to requirement (min 0 workers after virtuals).
+- Trickle: 5% delay then even/sec; overflow binned.
+- No manual override of auto pick.
 
-```
-{ "contracts":[
-    {"id":"ThistleFlower","name":"Thistle Flower","required_bees":3,"duration_seconds":20,
-     "cost":{"Honey":10,"Pollen":5},"reward":{"ThistleFlower":1}}
-] }
-```
+## Guard Post (per-cell defense, adjacency model)
 
-### resources.json
+- Build: 3 Comb + 2 Honey + 5 Pollen.
+- Bee cap: 1/cell.
+- Tick: every 5s, add floor(1 × (1 + 0.10 × adj_guard_neighbors)) to this cell’s Stored Defense.
+- Cap: max(20, 200 − 20 × adj_guard_neighbors) per cell.
+- Global Defense: sum of all Stored Defense values (no decay).
 
-```
-{ "base_caps_per_resource": 10,
-  "ids":["Honey","Comb","Pollen","NectarCommon","NectarSweet","NectarRich",
-         "PetalWhite","PetalPink","PetalYellow","PetalRed","PetalBlue","PetalPurple"] }
-```
+## Candle Hall (auto rituals)
 
-### items.json
+- Build: 1 Comb + 1 Honey + 1 Pollen (configurable).
+- Bee cap: 1/cell (required).
+- Rituals: automatic every 20s, no cost; each interval adds 1 random single-use ability to a shared list.
+- Adjacency A (Hall↔Hall): if touching ≥1 Hall, ritual interval −5s (floor 10s, does not stack).
+- Adjacency B (diversity): +4% rare-ability chance per unique non-Hall neighbor type (Wax, Vat, Guard, Gathering, Storage, Brood, QueenSeat).
 
-```
-{
-  "items": [
-    { "id":"EggCommon", "name":"Common Egg", "icon":"res://assets/icons/egg_common.svg" },
-    { "id":"EggUnique", "name":"Unique Egg", "icon":"res://assets/icons/egg_unique.svg" },
-    { "id":"EggRare", "name":"Rare Egg", "icon":"res://assets/icons/egg_rare.svg" },
-    { "id":"ThistleFlower", "name":"Thistle Flower", "icon":"res://assets/icons/thistle.svg" }
-  ],
-  "order":["EggCommon","EggUnique","EggRare","ThistleFlower"]
-}
-```
+## Abilities (single-use)
+
+- Listed in Abilities Panel (right slide).
+- Each shows costs (resources/items) and effect; Space to activate → pay → effect applies immediately → ability consumed.
+- Example effects: Honey +50% for 10s, Summon Common Bee, Replenish active harvest +50%.
+
+## Threats & Boss
+
+- Regular threats: 1:00 warning, 3:00 min gap, power ×2 on each reappearance (per ID). Single resolve: Global Defense ≥ Threat Power → defend; else loss.
+- Boss: 30:00 cap, 3:00 warning, phases 1000 / 1300 / 1700 one minute apart.
+- Resolve UI: bottom panel slides up, shows DEFENDED/DESTROYED, Defense vs Power, previews next threat (name + countdown), slides down.
+
+## Panels / UI
+
+- Panels: Resources, Inventory (items), Abilities, Offers — slide from right; arrows to navigate; Space confirm; Z close.
+- Assign Bee: stylized list; 1 bee per cell limit; shows trait chips.
+- Tooltips: show per-cell caps, complex size, adjacency bonuses, Purity, Stored/Cap defense, etc.
+- HUD: Global Defense, Swarm/Boss timers, Active Jobs cards, Queen egg count.
+
+## Data / JSON (high-level keys)
+
+- `cells.json` — per role costs, caps, adjacency/synergy knobs, timers.
+- `queens.json` — [20,19,18,17,16], RJ tier costs.
+- `queen_cards.json` — 3 cards (RareBias20, ExtraDraftCard, PickTwo).
+- `offers.json` — base slots, per-complex increments, pools, durations, yields.
+- `abilities.json` — pool, costs, effects.
+- `traits.json` — includes Construction (+5% Wax output per such bee in complex, no cap).
+- `storage_linked.json` — maps producer types → linked resources.
+- `threats.json`, `boss.json` — timings, powers.
+
+## Acceptance (golden path)
+
+- Building/assignment uses 1 bee/cell across all roles.
+- Brood forms only via enclosure; eggs auto-assign; manual hatch + draft.
+- Wax/Vat produce per specs; Vat purity outputs RJ; RJ upgrades Queen tiers; Queen cards chosen at start/tier-up.
+- Storage caps are adjacent, per-producer; overflow is binned (no pause).
+- Gathering offers scale with Hut complexes; auto-routes to the smallest eligible complex; virtual bees apply.
+- Guard Posts store defense with adjacency cap/speed; threats/boss resolve against the sum.
+- Candle Halls auto-generate abilities; Hall↔Hall and diversity bonuses apply.
