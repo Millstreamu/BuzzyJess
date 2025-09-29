@@ -1,6 +1,7 @@
 # Upgrade Guide: v1 to v2
 
 ## Breaking changes
+
 - Configuration schema bumped to version 2 (`data/schema_version.json`) to match the Rev B design.
 - Cell production, storage, and gathering rules rely on new per-structure keys (bee caps, adjacency bonuses, ritual automation).
 - Threat and boss pacing now reference new timing tables; previous saves expecting v1 timers will not align.
@@ -13,3 +14,4 @@
 ## Save compatibility
 - Existing v1 saves are not compatible because core config payloads changed shape and the schema version advanced.
 - Migrate by starting a fresh save or writing a one-time conversion that maps old progression fields to the new tiered schema.
+

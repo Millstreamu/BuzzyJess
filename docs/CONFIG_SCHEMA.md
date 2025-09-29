@@ -3,6 +3,7 @@
 This document outlines the JSON structures used for configuration files in version 2.
 
 ## data/configs/cells.json
+
 - Top-level object keyed by cell type identifier.
 - Common properties:
   - `build_cost`: object mapping resource names to required amounts.
@@ -76,3 +77,4 @@ This document outlines the JSON structures used for configuration files in versi
 - `warning_seconds`: integer early warning timer.
 - `phases`: array of integers marking phase thresholds.
 - `phase_gap_seconds`: integer downtime between phases.
+
