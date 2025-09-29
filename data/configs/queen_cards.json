@@ -1,0 +1,20 @@
+{
+  "offer_count": 3,
+  "cards": [
+    {
+      "id": "RareBias20",
+      "name": "+Rare Traits",
+      "mods": { "draft_rare_bias": 0.20 }
+    },
+    {
+      "id": "ExtraDraftCard",
+      "name": "+1 Draft Card",
+      "mods": { "draft_extra_cards": 1 }
+    },
+    {
+      "id": "PickTwo",
+      "name": "Pick Two",
+      "mods": { "draft_pick_count": 2 }
+    }
+  ]
+}
