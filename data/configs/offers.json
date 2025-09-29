@@ -1,21 +1,7 @@
 {
-  "harvests_pool": [
-    {"id":"Wildflower","name":"Wildflower Field","required_bees":2,"duration_seconds":90,
-     "outputs":{"Pollen":40,"NectarCommon":20}},
-    {"id":"Clover","name":"Clover Pasture","required_bees":3,"duration_seconds":120,
-     "outputs":{"Pollen":60,"NectarCommon":30}},
-    {"id":"Lavender","name":"Lavender Field","required_bees":3,"duration_seconds":120,
-     "outputs":{"Pollen":30,"NectarSweet":30}}
-  ],
-  "item_quests_pool": [
-    {"id":"Thistle","name":"Thistle Flower","required_bees":3,"duration_seconds":20,
-     "cost":{"Honey":10,"Pollen":5},"reward":{"ThistleFlower":1}},
-    {"id":"OakResin","name":"Oak Resin","required_bees":2,"duration_seconds":30,
-     "cost":{"Honey":8},"reward":{"OakResin":1}}
-  ],
-  "weights": { "harvests": { "Wildflower":1,"Clover":1,"Lavender":1 },
-               "item_quests": { "Thistle":1,"OakResin":1 } },
-  "slots": { "harvests": 2, "item_quests": 2 },
-  "tick_seconds": 1,
-  "delay_ratio": 0.05
+  "base_slots": { "harvest": 2, "item_quest": 2 },
+  "per_extra_complex_bonus": { "harvest": 1, "item_quest": 1 },
+  "harvests_pool": [],
+  "item_quests_pool": [],
+  "weights": {}
 }

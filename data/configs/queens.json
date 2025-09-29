@@ -1,22 +1,10 @@
 {
-  "queens": [
-    {
-      "id": "Queen_1",
-      "name": "Queen 1",
-      "desc": "Brood produces +2 bees (instead of 1).",
-      "effects": { "brood_extra_bees": 1 }
-    },
-    {
-      "id": "Queen_2",
-      "name": "Queen 2",
-      "desc": "All harvests require 1 fewer bee (min 1).",
-      "effects": { "harvest_bee_cost_delta": -1, "harvest_bee_cost_min": 1 }
-    },
-    {
-      "id": "Queen_3",
-      "name": "Queen 3",
-      "desc": "Each Honey Vat batch also returns +1 Nectar (Common).",
-      "effects": { "honey_vat_refund_nectar_common": 1 }
-    }
-  ]
+  "tiers": [20, 19, 18, 17, 16],
+  "tier_up_item": "RoyalJelly",
+  "tier_up_costs": {
+    "2": 1,
+    "3": 2,
+    "4": 3,
+    "5": 4
+  }
 }
