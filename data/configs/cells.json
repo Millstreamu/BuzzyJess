@@ -1,83 +1,96 @@
 {
-  "Empty": {
-    "build": {
-      "cost": { "Comb": 1 },
-      "requires_bee": true,
-      "seconds": 10,
-      "trait_construction_bonus": 3
-    },
-    "mergeable": false
-  },
-  "Brood": {
-    "cost": { "Comb": 1, "Honey": 5 },
-    "requires_bee": true,
-    "build_seconds": 5,
-    "post_hatch": "Damaged",
-    "mergeable": false,
-    "trait_construction_bonus": 3
-  },
-  "Damaged": {
-    "repair": {
-      "cost": { "Comb": 2 },
-      "requires_bee": true,
-      "seconds": 30,
-      "trait_construction_bonus": 3
-    },
-    "buildable": false,
-    "assignable": false,
-    "mergeable": false
-  },
-  "Storage": {
-    "cost": { "Comb": 8 },
-    "mergeable": true,
-    "tick_seconds": 0,
-    "produces": {}
+  "WaxWorkshop": {
+    "build_cost": { "Comb": 2, "Pollen": 10 },
+    "tick_seconds": 5,
+    "input_per_tick": { "Pollen": 2 },
+    "output_per_tick": { "Comb": 1 },
+    "per_cell_bee_cap": 1,
+    "merge_multiplier_per_extra_cell": 0.6,
+    "adjacency_output_bonus_per_neighbor": 0.10,
+    "trait_bonuses": {
+      "Construction": {
+        "per_bee_mult": 0.05,
+        "cap": null
+      }
+    }
   },
   "HoneyVat": {
-    "cost": { "Comb": 6, "NectarCommon": 4 },
-    "mergeable": true,
-    "tick_seconds": 5,
-    "produces": { "Honey": 1 },
-    "adjacency_time_bonus_per_neighbor_seconds": 0.5,
-    "adjacency_min_seconds": 3.0,
-    "adjacency_bonus_enabled": true
+    "build_cost": { "Comb": 2, "NectarCommon": 5 },
+    "batch": {
+      "input": { "NectarCommon": 2 },
+      "output": { "Honey": 1 }
+    },
+    "batch_seconds_per_complex_size": {
+      "base": 5,
+      "per_extra": 1
+    },
+    "per_cell_bee_cap": 1,
+    "merge_multiplier_per_extra_cell": 0.6,
+    "local_buffer_per_cell": 5,
+    "purity": {
+      "common": 1,
+      "threshold": 100,
+      "candle_hall_bonus_if_any_adjacent": 10,
+      "scope": "complex"
+    }
   },
-  "WaxWorkshop": {
-    "cost": { "Pollen": 5, "NectarCommon": 3 },
-    "mergeable": true,
-    "tick_seconds": 5,
-    "produces": { "Comb": 1 },
-    "adjacency_time_bonus_per_neighbor_seconds": 0.5,
-    "adjacency_min_seconds": 2.0,
-    "adjacency_bonus_enabled": true
-  },
-  "CandleHall": {
-    "cost": { "Comb": 4, "Honey": 4, "Pollen": 4 },
-    "mergeable": true,
-    "tick_seconds": 6,
-    "produces": { "Honey": 1 },
-    "adjacency_time_bonus_per_neighbor_seconds": 0.5,
-    "adjacency_min_seconds": 20.0,
-    "adjacency_bonus_enabled": true
-  },
-  "GuardPost": {
-    "cost": { "Comb": 5, "Honey": 3, "PetalRed": 2 },
-    "mergeable": true,
-    "tick_seconds": 5,
-    "produces": { "Pollen": 1 },
-    "adjacency_time_bonus_per_neighbor_seconds": 0.5,
-    "adjacency_min_seconds": 3.0,
-    "adjacency_bonus_enabled": true
+  "Storage": {
+    "build_cost": { "Comb": 1 },
+    "per_adjacent_bonus": 5
   },
   "GatheringHut": {
-    "cost": { "Comb": 3, "Honey": 3, "Pollen": 6 },
-    "mergeable": true,
-    "tick_seconds": 7,
-    "produces": { "Pollen": 1 }
+    "build_cost": { "Comb": 2, "Honey": 10 },
+    "gathering": {
+      "virtual_bees_per_two_cells": 1,
+      "auto_pick_smallest_complex": true,
+      "tie_breaker": "earliest_built",
+      "distinct_complexes_required": true
+    }
   },
-  "QueenSeat": {
-    "buildable": false,
-    "assignable": false,
-    "mergeable": false
+  "GuardPost": {
+    "build_cost": { "Comb": 3, "Honey": 2, "Pollen": 5 },
+    "per_cell_bee_cap": 1,
+    "tick_seconds": 5,
+    "base_per_tick": 1,
+    "adjacency": {
+      "cap_base": 200,
+      "cap_penalty_per_neighbor": 20,
+      "cap_min": 20,
+      "speed_bonus_per_neighbor": 0.10
+    }
+  },
+  "CandleHall": {
+    "build_cost": { "Comb": 1, "Honey": 1, "Pollen": 1 },
+    "per_cell_bee_cap": 1,
+    "auto_ritual": {
+      "enabled": true,
+      "interval_seconds": 20,
+      "cost": {}
+    },
+    "adjacency": {
+      "hall_interval_bonus_seconds": 5,
+      "interval_floor_seconds": 10,
+      "rare_bonus_per_unique_neighbor": 0.04,
+      "countable_types": [
+        "WaxWorkshop",
+        "HoneyVat",
+        "GuardPost",
+        "GatheringHut",
+        "Storage",
+        "Brood",
+        "QueenSeat"
+      ]
+    }
+  },
+  "Brood": {
+    "hatch_seconds": 10,
+    "ready_requires_manual_hatch": true,
+    "enclosure": {
+      "block_types": ["Specialized"]
+    },
+    "on_enclosure_break": {
+      "result": "Damaged",
+      "egg": "lost"
+    }
   }
 }

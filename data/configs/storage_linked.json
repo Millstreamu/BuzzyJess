@@ -1,0 +1,7 @@
+{
+  "LinkedStorage": {
+    "WaxWorkshop": ["Comb"],
+    "HoneyVat": ["Honey"],
+    "GatheringHut": ["Pollen", "NectarCommon"]
+  }
+}
