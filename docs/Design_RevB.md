@@ -22,7 +22,8 @@
 ## Resources & Items
 
 - Resources (cap-limited): Honey, Comb, Pollen, NectarCommon.
-- Items (inventory): RoyalJelly (RJ). (Eggs are a hidden Queen counter, not items.)
+- Items (inventory): Eggs (Common/Unique/Rare variants) and the Thistle Flower quest item. Runs begin with 3 Common Eggs in the
+  inventory, matching the current `start_values.json` seed.
 
 ## Queen
 
