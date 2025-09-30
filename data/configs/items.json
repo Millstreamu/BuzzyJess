@@ -1,9 +1,10 @@
 {
   "items": [
+    { "id": "RoyalJelly", "name": "Royal Jelly", "icon": "res://assets/icons/royal_jelly.svg" },
     { "id": "EggCommon", "name": "Common Egg", "icon": "res://assets/icons/egg_common.svg" },
     { "id": "EggUnique", "name": "Unique Egg", "icon": "res://assets/icons/egg_unique.svg" },
     { "id": "EggRare", "name": "Rare Egg", "icon": "res://assets/icons/egg_rare.svg" },
     { "id": "ThistleFlower", "name": "Thistle Flower", "icon": "res://assets/icons/thistle.svg" }
   ],
-  "order": ["EggCommon", "EggUnique", "EggRare", "ThistleFlower"]
+  "order": ["RoyalJelly", "EggCommon", "EggUnique", "EggRare", "ThistleFlower"]
 }
