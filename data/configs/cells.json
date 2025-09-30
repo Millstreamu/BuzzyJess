@@ -84,6 +84,7 @@
   },
   "Brood": {
     "hatch_seconds": 10,
+    "mixed_neighbors_restrict_chance": 0.5,
     "ready_requires_manual_hatch": true,
     "enclosure": {
       "block_types": ["Specialized"]

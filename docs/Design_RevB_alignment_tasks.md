@@ -10,7 +10,7 @@ This checklist captures gaps between the RevB design description and the current
 
 ## Brood & Egg Flow
 
-- [ ] Add the missing `mixed_neighbors_restrict_chance` tuning that RevB calls out for Brood drafts, or update the design to match the current implementation (which omits the knob). (Design doc lines 49–56 vs. `data/configs/cells.json`.)
+- [x] Add the missing `mixed_neighbors_restrict_chance` tuning that RevB calls out for Brood drafts, or update the design to match the current implementation (which omits the knob). (Design doc lines 49–56 vs. `data/configs/cells.json`.) — **Resolved:** `cells.json` now defines the 50% restriction chance to match the design.
 - [ ] Harmonize the hatch-timer rules. RevB claims a flat 10s hatch time, while `eggs.json` varies the duration (10/15/20s) by rarity. Decide on the intended behavior and adjust doc and/or configs accordingly. (Design doc line 41 vs. `data/configs/eggs.json`.)
 - [ ] Document or remove the queen egg feeding & rarity bump systems present in `eggs.json`, which are absent from the design description. (Design doc lines 37–49 vs. `data/configs/eggs.json`.)
 
