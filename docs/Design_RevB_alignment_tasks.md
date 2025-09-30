@@ -4,7 +4,7 @@ This checklist captures gaps between the RevB design description and the current
 
 ## Resource & Item Model
 
-- [ ] Update the design doc (or trim the configs) so that the resource list matches reality. RevB only lists Honey/Comb/Pollen/NectarCommon, but `resources.json` also exposes NectarSweet, NectarRich, and six Petal resources. Decide whether the design should embrace these extra resource types or whether the data should be reduced. (Design doc §"Resources & Items" lines 24–25 vs. `data/configs/resources.json`.)
+- [x] Update the design doc (or trim the configs) so that the resource list matches reality. RevB only lists Honey/Comb/Pollen/NectarCommon, but `resources.json` also exposes NectarSweet, NectarRich, and six Petal resources. Decide whether the design should embrace these extra resource types or whether the data should be reduced. (Design doc §"Resources & Items" lines 24–25 vs. `data/configs/resources.json`.) — **Resolved:** Design now explicitly lists the three Nectar grades and six Petal colors alongside the base resources.
 - [ ] Reconcile the inventory model. RevB states that only Royal Jelly is an inventory item and eggs are hidden, yet `items.json` exposes three egg items plus Thistle Flowers, and `start_values.json` seeds EggCommon inventory. Align the doc and data by either documenting the existing items or changing the configs. (Design doc lines 24–25 vs. `data/configs/items.json` and `data/configs/start_values.json`.)
 - [ ] Clarify how Royal Jelly is represented. The design references RJ as an item but there is no explicit item entry in `items.json`. Confirm whether RJ should be added to the data or the doc should instead call it out as a derived value.
 
