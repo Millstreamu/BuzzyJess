@@ -21,7 +21,7 @@
 
 ## Resources & Items
 
-- Resources (cap-limited): Honey, Comb, Pollen, NectarCommon.
+- Resources (cap-limited): Honey, Comb, Pollen, three Nectar grades (Common/Sweet/Rich), and six Petal colors (White/Pink/Yellow/Red/Blue/Purple).
 - Items (inventory): RoyalJelly (RJ). (Eggs are a hidden Queen counter, not items.)
 
 ## Queen
